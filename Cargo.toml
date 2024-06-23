@@ -1,0 +1,6 @@
+[workspace]
+resolver = "2"
+members = ["animation_builder", "examples"]
+
+[workspace.dependencies]
+iced = { git = "https://github.com/iced-rs/iced", rev = "72b975ec82660b39f27b6cb015b763caf20e6483", features = ["advanced"] }
