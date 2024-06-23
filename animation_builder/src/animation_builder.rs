@@ -9,6 +9,9 @@ use iced::advanced::{
 
 use crate::{animate::Animate, animation::Animation, curve::Curve};
 
+/// The default duration for animations.
+pub const DEFAULT_DURATION: Duration = Duration::from_millis(300);
+
 pub struct State<T>
 where
     T: 'static + Animate + Clone + PartialEq,
@@ -29,7 +32,7 @@ where
             final_value: value.clone(),
             initial_value: value.clone(),
             current_value: value,
-            duration: Duration::from_millis(300),
+            duration: DEFAULT_DURATION,
             animation: Animation::Stopped,
         }
     }
@@ -90,6 +93,10 @@ where
 
     /// Indicates whether this widget should invalidate the application layout
     /// when animating between changes.
+    ///
+    /// This is set to `false` by default for performance reasons, but you may
+    /// want to set this to `true` if you're animating a value that affects the
+    /// layout of the widget (e.g. its size, text, position, etc).
     pub fn animates_layout(mut self, animates_layout: bool) -> Self {
         self.animates_layout = animates_layout;
         self
@@ -256,6 +263,7 @@ where
         // Request a redraw if the current value doesn't match the final value.
         if state.current_value != state.final_value {
             shell.request_redraw(iced::window::RedrawRequest::NextFrame);
+            // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {
                 shell.invalidate_layout();
             }
@@ -267,14 +275,6 @@ where
                 state.initial_value = state.final_value.clone();
                 return event::Status::Ignored;
             }
-
-            // Instantiate the start of the animation if it isn't present yet
-            if state.animation == Animation::Stopped {
-                state.animation = Animation::Running {
-                    start: now,
-                    duration: state.duration,
-                };
-            };
 
             // Update the animation and request a redraw
             state.animation.update(now);

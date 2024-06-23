@@ -1,7 +1,7 @@
 use iced::{
     color,
     widget::{button, column, container, text, Row},
-    Border, Color, Element, Length,
+    Border, Color, Element, Font, Length,
 };
 use iced_animation_builder::animation_builder::AnimationBuilder;
 
@@ -47,7 +47,7 @@ impl State {
     }
 
     fn text_color_for(color: Color) -> Color {
-        if luminosity_of(color) > 0.5 {
+        if luminance_of(color) > 0.5 {
             Color::BLACK
         } else {
             Color::WHITE
@@ -78,6 +78,7 @@ impl State {
                         (255.0 * color.g) as u8,
                         (255.0 * color.b) as u8
                     ))
+                    .font(Font::MONOSPACE)
                     .color(text_color),
                 )
                 .style(move |_| iced::widget::container::Style {
@@ -90,7 +91,8 @@ impl State {
                 .center_x()
                 .center_y()
                 .into()
-            });
+            })
+            .animates_layout(true);
 
         column![buttons, current_color]
             .spacing(8)
@@ -104,8 +106,7 @@ pub fn main() -> iced::Result {
     iced::run("Animated color", State::update, State::view)
 }
 
-/// Helper function to determine the luminosity of a color,
-/// which will help us determine the color of the text.
-fn luminosity_of(color: Color) -> f32 {
+/// Helper function to estimate the luminance of a color so we can adjust the text color.
+fn luminance_of(color: Color) -> f32 {
     (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) * color.a
 }
