@@ -69,6 +69,7 @@ impl State {
         }))
         .spacing(8);
 
+        // You can animate multiple values at a time by passing a tuple to `AnimationBuilder`.
         let current_color =
             AnimationBuilder::new((self.color, self.text_color), |(color, text_color)| {
                 container(

@@ -13,3 +13,7 @@ iced_animation_builder = { version = "0.1.0", path = "../animation_builder" }
 [[example]]
 name = "animated_color"
 path = "animated_color.rs"
+
+[[example]]
+name = "animated_size"
+path = "animated_size.rs"
