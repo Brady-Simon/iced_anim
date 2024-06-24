@@ -17,3 +17,7 @@ path = "animated_color.rs"
 [[example]]
 name = "animated_size"
 path = "animated_size.rs"
+
+[[example]]
+name = "animated_theme"
+path = "animated_theme.rs"
