@@ -7,19 +7,7 @@ pub trait Animate {
 impl Animate for f32 {
     fn animate(start: &Self, end: &Self, progress: f32, curve: Curve) -> Self {
         let value_range = end - start;
-        match curve {
-            Curve::Linear => start + value_range * progress,
-            Curve::EaseIn => start + value_range * progress.powi(2),
-            Curve::EaseOut => start + value_range * progress.sqrt(),
-            Curve::EaseInOut => {
-                let progress = progress * 2.0;
-                if progress < 1.0 {
-                    start + (value_range * 0.5) * progress.powi(2)
-                } else {
-                    start + value_range * -0.5 * ((progress - 1.0) * (progress - 3.0) - 1.0)
-                }
-            }
-        }
+        curve.value(progress) * value_range + start
     }
 }
 
