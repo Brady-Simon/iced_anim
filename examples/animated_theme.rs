@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use iced::{
     theme::palette::{Extended, Pair},
-    widget::{column, container, pick_list, row, text, themer, tooltip, Row, Space},
+    widget::{column, container, pick_list, row, text, tooltip, Row, Space},
     Border, Element, Length, Theme,
 };
 use iced_animation_builder::AnimationBuilder;
@@ -35,23 +35,20 @@ impl State {
 
     fn view(&self) -> Element<Message> {
         AnimationBuilder::new(self.theme.clone(), move |theme| {
-            themer(
-                theme.clone(),
-                container(
-                    row![
-                        pick_list(Theme::ALL, Some(theme.clone()), Message::ChangeTheme),
-                        palette_grid(theme.extended_palette()),
-                    ]
-                    .spacing(8),
-                )
-                .padding(8)
-                .style(|theme: &iced::Theme| container::Style {
-                    background: Some(theme.palette().background.into()),
-                    ..Default::default()
-                })
-                .width(Length::Fill)
-                .height(Length::Fill),
+            container(
+                row![
+                    pick_list(Theme::ALL, Some(theme.clone()), Message::ChangeTheme),
+                    palette_grid(theme.extended_palette()),
+                ]
+                .spacing(8),
             )
+            .padding(8)
+            .style(move |_| container::Style {
+                background: Some(theme.palette().background.into()),
+                ..Default::default()
+            })
+            .width(Length::Fill)
+            .height(Length::Fill)
             .into()
         })
         .duration(Duration::from_millis(500))
@@ -144,5 +141,7 @@ fn pair_square<'a>(name: String, pair: Pair) -> Element<'a, Message> {
 }
 
 pub fn main() -> iced::Result {
-    iced::run("Animated theme", State::update, State::view)
+    iced::program("Animated theme", State::update, State::view)
+        .theme(|state| state.theme.clone())
+        .run()
 }
