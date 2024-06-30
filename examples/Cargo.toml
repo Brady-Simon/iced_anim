@@ -8,7 +8,7 @@ publish = false
 
 [dev-dependencies]
 iced.workspace = true
-iced_animation_builder = { version = "0.1.0", path = "../animation_builder" }
+iced_animation_builder = { version = "0.1.0", path = "../animation_builder", features = ["derive"] }
 
 [[example]]
 name = "animated_color"
@@ -21,3 +21,7 @@ path = "animated_size.rs"
 [[example]]
 name = "animated_theme"
 path = "animated_theme.rs"
+
+[[example]]
+name = "derive_animation"
+path = "derive_animation.rs"

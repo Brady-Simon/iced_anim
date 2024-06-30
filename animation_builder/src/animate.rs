@@ -17,7 +17,7 @@ impl Animate for iced::Color {
         let g = f32::animate(&start.g, &end.g, progress, curve);
         let b = f32::animate(&start.b, &end.b, progress, curve);
         let a = f32::animate(&start.a, &end.a, progress, curve);
-        Self::from_rgba(r, g, b, a)
+        iced::Color { r, g, b, a }
     }
 }
 

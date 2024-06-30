@@ -1,0 +1,11 @@
+[package]
+name = "iced_animation_builder_derive"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "2.0.68"
+quote = "1.0.36"

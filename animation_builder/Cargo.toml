@@ -9,3 +9,7 @@ repository = "https://github.com/Brady-Simon/iced_animation_builder"
 
 [dependencies]
 iced.workspace = true
+iced_animation_builder_derive = { version = "0.1.0", path = "../animation_builder_derive", optional = true }
+
+[features]
+derive = ["iced_animation_builder_derive"]
