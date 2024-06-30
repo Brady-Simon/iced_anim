@@ -28,15 +28,14 @@ pub fn animate_derive(input: TokenStream) -> TokenStream {
     // Generate code for each field that implements Animate
     let fields_animate = fields.named.iter().map(|f| {
         let name = &f.ident;
-        let ty = &f.ty;
         quote! {
-            #name: <#ty as ::iced_animation_builder::Animate>::animate(&start.#name, &end.#name, progress, curve),
+            #name: ::iced_animation_builder::Animate::animate_to(&self.#name, &end.#name, progress, curve),
         }
     });
 
     let impl_gen = quote! {
         impl ::iced_animation_builder::Animate for #name {
-            fn animate(start: &Self, end: &Self, progress: f32, curve: ::iced_animation_builder::Curve) -> Self {
+            fn animate_to(&self, end: &Self, progress: f32, curve: ::iced_animation_builder::Curve) -> Self {
                 Self {
                     #(#fields_animate)*
                 }

@@ -279,12 +279,10 @@ where
             // Update the animation and request a redraw
             state.animation.update(now);
             let progress = state.animation.progress(now);
-            let new_value = Animate::animate(
-                &state.initial_value,
-                &state.final_value,
-                progress,
-                self.curve,
-            );
+            let new_value =
+                state
+                    .initial_value
+                    .animate_to(&state.final_value, progress, self.curve);
             state.current_value = new_value;
             self.cached_element = (self.builder)(state.current_value.clone());
         }
