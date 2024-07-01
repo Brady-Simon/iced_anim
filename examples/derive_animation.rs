@@ -2,7 +2,7 @@ use iced::{
     widget::{button, column, container, text},
     Border, Color, Element, Length,
 };
-use iced_animation_builder::{Animate, AnimationBuilder, Curve};
+use iced_animation_builder::{Animate, AnimationBuilder};
 
 #[derive(Animate, Clone, PartialEq)]
 struct Rectangle {
@@ -78,7 +78,6 @@ impl State {
             .center_y()
             .into()
         })
-        .curve(Curve::EaseInOut)
         .animates_layout(true);
 
         let label = text("Animated rectangle");
