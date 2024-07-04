@@ -72,10 +72,8 @@ impl State {
                 background: Some(rectangle.color.into()),
                 ..Default::default()
             })
-            .width(Length::Fixed(rectangle.width))
-            .height(Length::Fixed(rectangle.height))
-            .center_x()
-            .center_y()
+            .center_x(Length::Fixed(rectangle.width))
+            .center_y(Length::Fixed(rectangle.height))
             .into()
         })
         .animates_layout(true);
@@ -91,5 +89,5 @@ impl State {
 }
 
 pub fn main() -> iced::Result {
-    iced::run("Animated size", State::update, State::view)
+    iced::run("Derived animation", State::update, State::view)
 }

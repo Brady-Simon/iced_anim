@@ -87,10 +87,8 @@ impl State {
                     border: Border::rounded(6),
                     ..Default::default()
                 })
-                .width(Length::Fill)
-                .height(Length::Fixed(30.0))
-                .center_x()
-                .center_y()
+                .center_x(Length::Fill)
+                .center_y(Length::Fixed(30.0))
                 .into()
             })
             .animates_layout(true);

@@ -49,10 +49,7 @@ impl State {
                     background: Some(theme.extended_palette().secondary.weak.color.into()),
                     ..Default::default()
                 })
-                .width(Length::Fixed(size))
-                .height(Length::Fixed(size))
-                .center_x()
-                .center_y()
+                .center(Length::Fixed(size))
                 .into()
         })
         .animates_layout(true);

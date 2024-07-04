@@ -76,7 +76,7 @@ where
             builder: Box::new(builder),
             cached_element: element,
             curve: Curve::default(),
-            duration: Duration::from_millis(300),
+            duration: DEFAULT_DURATION,
             animates_layout: false,
         }
     }
@@ -162,19 +162,19 @@ where
 
     fn operate(
         &self,
-        tree: &mut Tree,
+        state: &mut Tree,
         layout: layout::Layout<'_>,
         renderer: &Renderer,
-        operation: &mut dyn iced::advanced::widget::Operation<Message>,
+        operation: &mut dyn iced::advanced::widget::Operation<()>,
     ) {
         operation.container(None, layout.bounds(), &mut |operation| {
             self.cached_element.as_widget().operate(
-                &mut tree.children[0],
+                &mut state.children[0],
                 layout,
                 renderer,
                 operation,
             );
-        });
+        })
     }
 
     fn overlay<'b>(
@@ -269,7 +269,7 @@ where
             }
         }
 
-        if let iced::Event::Window(_, iced::window::Event::RedrawRequested(now)) = event {
+        if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
             if state.current_value == state.final_value {
                 state.animation.stop();
                 state.initial_value = state.final_value.clone();

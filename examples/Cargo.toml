@@ -7,7 +7,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dev-dependencies]
-iced.workspace = true
+iced = { workspace = true, features = ["advanced", "tokio"] }
 iced_animation_builder = { version = "0.1.0", path = "../animation_builder", features = ["derive"] }
 
 [[example]]
@@ -23,5 +23,5 @@ name = "animated_theme"
 path = "animated_theme.rs"
 
 [[example]]
-name = "derive_animation"
-path = "derive_animation.rs"
+name = "derived_animation"
+path = "derived_animation.rs"
