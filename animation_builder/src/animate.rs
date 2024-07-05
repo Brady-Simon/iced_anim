@@ -12,6 +12,14 @@ impl Animate for f32 {
     }
 }
 
+impl Animate for iced::Point<f32> {
+    fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
+        let x = self.x.animate_to(&end.x, progress, curve);
+        let y = self.y.animate_to(&end.y, progress, curve);
+        iced::Point { x, y }
+    }
+}
+
 impl Animate for iced::Color {
     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
         let r = self.r.animate_to(&end.r, progress, curve);
