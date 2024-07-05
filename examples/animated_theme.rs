@@ -5,7 +5,7 @@ use iced::{
     widget::{column, container, pick_list, row, text, tooltip, Row, Space},
     Border, Element, Length, Theme,
 };
-use iced_animation_builder::AnimationBuilder;
+use iced_anim::AnimationBuilder;
 
 #[derive(Debug, Clone)]
 enum Message {

@@ -2,7 +2,7 @@ use iced::{
     widget::{button, column, container, text},
     Border, Color, Element, Length,
 };
-use iced_animation_builder::{Animate, AnimationBuilder};
+use iced_anim::{Animate, AnimationBuilder};
 
 #[derive(Animate, Clone, PartialEq)]
 struct Rectangle {

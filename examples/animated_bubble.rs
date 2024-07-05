@@ -4,7 +4,7 @@ use iced::{
     widget::{container, MouseArea, Space},
     Border, Color, Element, Length, Padding, Point, Size, Subscription, Theme,
 };
-use iced_animation_builder::animation_builder::AnimationBuilder;
+use iced_anim::animation_builder::AnimationBuilder;
 
 const BUBBLE_SIZE: f32 = 50.0;
 
@@ -82,7 +82,7 @@ impl State {
                 .into()
             })
             .duration(Duration::from_millis(150))
-            .curve(iced_animation_builder::Curve::Linear)
+            .curve(iced_anim::Curve::Linear)
             .animates_layout(true),
         )
         .width(Length::Fill)

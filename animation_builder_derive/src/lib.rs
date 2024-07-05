@@ -29,13 +29,13 @@ pub fn animate_derive(input: TokenStream) -> TokenStream {
     let fields_animate = fields.named.iter().map(|f| {
         let name = &f.ident;
         quote! {
-            #name: ::iced_animation_builder::Animate::animate_to(&self.#name, &end.#name, progress, curve),
+            #name: ::iced_anim::Animate::animate_to(&self.#name, &end.#name, progress, curve),
         }
     });
 
     let impl_gen = quote! {
-        impl ::iced_animation_builder::Animate for #name {
-            fn animate_to(&self, end: &Self, progress: f32, curve: ::iced_animation_builder::Curve) -> Self {
+        impl ::iced_anim::Animate for #name {
+            fn animate_to(&self, end: &Self, progress: f32, curve: ::iced_anim::Curve) -> Self {
                 Self {
                     #(#fields_animate)*
                 }

@@ -2,7 +2,7 @@ use iced::{
     widget::{button, column, container, row, text},
     Border, Element, Length,
 };
-use iced_animation_builder::animation_builder::AnimationBuilder;
+use iced_anim::animation_builder::AnimationBuilder;
 
 #[derive(Debug, Clone)]
 enum Message {

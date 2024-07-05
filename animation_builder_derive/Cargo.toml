@@ -1,5 +1,5 @@
 [package]
-name = "iced_animation_builder_derive"
+name = "iced_anim_derive"
 version = "0.1.0"
 edition = "2021"
 

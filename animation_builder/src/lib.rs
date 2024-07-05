@@ -8,4 +8,4 @@ pub use animation_builder::{AnimationBuilder, DEFAULT_DURATION};
 pub use curve::Curve;
 
 #[cfg(feature = "derive")]
-pub use iced_animation_builder_derive::Animate;
+pub use iced_anim_derive::Animate;
