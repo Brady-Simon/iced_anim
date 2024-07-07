@@ -23,18 +23,17 @@ impl State {
     fn update(&mut self, message: Message) {
         match message {
             Message::AdjustSize(dx) => {
-                if self.size == 0.0 && dx < 0.0 {
-                    return;
-                }
-                self.size += dx;
+                self.size = (self.size + dx).max(0.0);
             }
         }
     }
 
     fn view(&self) -> Element<Message> {
         let buttons = row![
+            button(text("-150")).on_press(Message::AdjustSize(-150.0)),
             button(text("-50")).on_press(Message::AdjustSize(-50.0)),
             button(text("+50")).on_press(Message::AdjustSize(50.0)),
+            button(text("+150")).on_press(Message::AdjustSize(150.0)),
         ]
         .spacing(8);
 

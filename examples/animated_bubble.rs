@@ -81,7 +81,6 @@ impl State {
                 .on_move(Message::MoveTo)
                 .into()
             })
-            // .duration(Duration::from_millis(150))
             .animates_layout(true),
         )
         .width(Length::Fill)

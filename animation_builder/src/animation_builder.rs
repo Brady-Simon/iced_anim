@@ -88,7 +88,7 @@ where
         // Update the spring's target if it has changed
         let state = tree.state.downcast_mut::<Spring<T>>();
         if state.target() != self.spring.value() {
-            state.set_target(self.spring.target().clone());
+            state.interrupt(self.spring.target().clone());
         }
 
         tree.diff_children(std::slice::from_ref(&self.cached_element));
@@ -205,26 +205,38 @@ where
 
         let spring = tree.state.downcast_mut::<Spring<T>>();
 
+        let has_energy = spring.has_energy();
         // Request a redraw if the spring has remaining energy
-        if spring.has_energy() {
+        if has_energy {
+            // spring.update(self.last_update.elapsed().as_secs_f32());
             shell.request_redraw(iced::window::RedrawRequest::NextFrame);
             // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {
                 shell.invalidate_layout();
             }
-        }
 
-        if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
-            if !spring.has_energy() {
-                return event::Status::Ignored;
-            }
+            // TODO: Figure out why using window::Event::RedrawRequested results in a laggy animation.
 
             // Update the animation and request a redraw
-            let dt = now.duration_since(self.last_update).as_secs_f32();
+            let now = Instant::now();
+            let dt = now.duration_since(self.last_update);
             spring.update(dt);
             self.cached_element = (self.builder)(spring.value().clone());
             self.last_update = now;
         }
+
+        // if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
+        //     if !has_energy {
+        //         return event::Status::Ignored;
+        //     }
+
+        //     // Update the animation and request a redraw
+        //     let dt = now.duration_since(self.last_update);
+        //     println!("Updating {} ms", dt.as_millis());
+        //     spring.update(dt);
+        //     self.cached_element = (self.builder)(spring.value().clone());
+        //     self.last_update = now;
+        // }
 
         event::Status::Ignored
     }
