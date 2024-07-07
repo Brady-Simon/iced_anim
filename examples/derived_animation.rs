@@ -4,15 +4,16 @@ use iced::{
 };
 use iced_anim::{Animate, AnimationBuilder};
 
+/// A custom struct with all animatable properties that derives `Animate`
 #[derive(Animate, Clone, PartialEq)]
-struct Rectangle {
+struct CustomRect {
     width: f32,
     height: f32,
     border_radius: f32,
     color: Color,
 }
 
-impl Rectangle {
+impl CustomRect {
     /// A fake randomizer that will adjust the rectangle's properties
     fn randomize(&mut self) {
         self.border_radius = (self.border_radius + 20.0) % 32.0;
@@ -32,13 +33,13 @@ enum Message {
 }
 
 struct State {
-    rectangle: Rectangle,
+    rectangle: CustomRect,
 }
 
 impl Default for State {
     fn default() -> Self {
         Self {
-            rectangle: Rectangle {
+            rectangle: CustomRect {
                 width: 100.0,
                 height: 100.0,
                 border_radius: 8.0,
