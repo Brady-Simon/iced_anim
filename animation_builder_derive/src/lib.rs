@@ -16,6 +16,7 @@ pub fn animate_derive(input: TokenStream) -> TokenStream {
     let name = input.ident;
     let data = input.data;
 
+    // TODO: Support other types of data structures
     let Data::Struct(data_struct) = data else {
         panic!("Animate can only be derived for structs");
     };
@@ -24,21 +25,43 @@ pub fn animate_derive(input: TokenStream) -> TokenStream {
         panic!("Animate can only be derived for structs with named fields");
     };
 
-    // Generate the implementation based on the struct's fields
-    // Generate code for each field that implements Animate
-    let fields_animate = fields.named.iter().map(|f| {
+    let component_fields = fields.named.iter().map(|f| {
+        let ty = &f.ty;
+        quote! {
+            total += <#ty as ::iced_anim::Animate>::components();
+        }
+    });
+
+    let update_fields = fields.named.iter().map(|f| {
         let name = &f.ident;
         quote! {
-            #name: ::iced_anim::Animate::animate_to(&self.#name, &end.#name, progress, curve),
+            ::iced_anim::Animate::update(&mut self.#name, components);
+        }
+    });
+
+    let distance_fields = fields.named.iter().map(|f| {
+        let name = &f.ident;
+        quote! {
+            distances.push(::iced_anim::Animate::distance_to(&self.#name, &end.#name));
         }
     });
 
     let impl_gen = quote! {
         impl ::iced_anim::Animate for #name {
-            fn animate_to(&self, end: &Self, progress: f32, curve: ::iced_anim::Curve) -> Self {
-                Self {
-                    #(#fields_animate)*
-                }
+            fn components() -> usize {
+                let mut total = 0;
+                #(#component_fields)*
+                total
+            }
+
+            fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+                #(#update_fields)*
+            }
+
+            fn distance_to(&self, end: &Self) -> Vec<f32> {
+                let mut distances = Vec::with_capacity(Self::components());
+                #(#distance_fields)*
+                distances.concat()
             }
         }
     };

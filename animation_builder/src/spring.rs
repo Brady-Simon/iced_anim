@@ -105,9 +105,9 @@ where
             .map(|(d, v)| self.new_velocity(d, v, dt.as_secs_f32()))
             .collect();
 
-        let components = velocity.iter().map(|v| v * dt.as_secs_f32()).collect();
-        self.velocity = velocity;
-        self.value.update(components);
+        self.velocity = velocity.clone();
+        let mut components = velocity.iter().map(|v| v * dt.as_secs_f32());
+        self.value.update(&mut components);
     }
 
     /// Gets the new velocity of the spring given the `displacement` and `velocity`.

@@ -1,6 +1,6 @@
 pub trait Animate: Clone + PartialEq {
     fn components() -> usize;
-    fn update(&mut self, components: Vec<f32>);
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>);
     fn distance_to(&self, end: &Self) -> Vec<f32>;
 }
 
@@ -9,13 +9,8 @@ impl Animate for f32 {
         1
     }
 
-    fn update(&mut self, components: Vec<f32>) {
-        assert!(
-            components.len() == 1,
-            "Expected 1 component, got {}",
-            components.len()
-        );
-        *self += components[0];
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        *self += components.next().unwrap();
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
@@ -28,18 +23,12 @@ impl Animate for iced::Point<f32> {
         2
     }
 
-    fn update(&mut self, components: Vec<f32>) {
-        assert!(
-            components.len() == 2,
-            "Expected 2 components, got {}",
-            components.len()
-        );
-        self.x += components[0];
-        self.y += components[1];
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.x += components.next().unwrap();
+        self.y += components.next().unwrap();
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        // euclidean_distance!(self.x.distance_to(&end.x), self.y.distance_to(&end.y))
         vec![self.x.distance_to(&end.x), self.y.distance_to(&end.y)].concat()
     }
 }
@@ -49,16 +38,11 @@ impl Animate for iced::Color {
         4
     }
 
-    fn update(&mut self, components: Vec<f32>) {
-        assert!(
-            components.len() == 4,
-            "Expected 4 components, got {}",
-            components.len()
-        );
-        self.r = (self.r + components[0]).clamp(0.0, 1.0);
-        self.g = (self.g + components[1]).clamp(0.0, 1.0);
-        self.b = (self.b + components[2]).clamp(0.0, 1.0);
-        self.a = (self.a + components[3]).clamp(0.0, 1.0);
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.r = (self.r + components.next().unwrap()).clamp(0.0, 1.0);
+        self.g = (self.g + components.next().unwrap()).clamp(0.0, 1.0);
+        self.b = (self.b + components.next().unwrap()).clamp(0.0, 1.0);
+        self.a = (self.a + components.next().unwrap()).clamp(0.0, 1.0);
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
@@ -255,20 +239,24 @@ impl Animate for iced::Color {
 //     }
 // }
 
-// impl<T1, T2> Animate for (T1, T2)
-// where
-//     T1: Animate,
-//     T2: Animate,
-// {
-//     fn update(&mut self, dx: f32) {
-//         self.0.update(dx);
-//         self.1.update(dx);
-//     }
+impl<T1, T2> Animate for (T1, T2)
+where
+    T1: Animate,
+    T2: Animate,
+{
+    fn components() -> usize {
+        T1::components() + T2::components()
+    }
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(self.0.distance_to(&end.0), self.1.distance_to(&end.1))
-//     }
-// }
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.0.update(components);
+        self.1.update(components);
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![self.0.distance_to(&end.0), self.1.distance_to(&end.1)].concat()
+    }
+}
 
 // #[cfg(test)]
 // mod tests {
