@@ -39,6 +39,26 @@ impl Curve {
             Curve::Sine => (progress * PI / 2.0).sin(),
         }
     }
+
+    pub fn new_progress(&self, current_progress: f32) -> f32 {
+        let mut low = 0.0;
+        let mut high = 1.0;
+        // Adjust tolerance as needed for precision
+        let tolerance = 0.00001;
+
+        while high - low > tolerance {
+            let mid = (low + high) / 2.0;
+            let value_at_mid = self.value(mid);
+
+            if value_at_mid < current_progress {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+
+        (low + high) / 2.0
+    }
 }
 
 #[cfg(test)]

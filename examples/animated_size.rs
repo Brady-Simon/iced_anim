@@ -65,5 +65,6 @@ impl State {
 }
 
 pub fn main() -> iced::Result {
+    std::env::set_var("RUST_BACKTRACE", "1");
     iced::run("Animated size", State::update, State::view)
 }

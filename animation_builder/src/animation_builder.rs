@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use iced::advanced::{
     graphics::core::{event, Element},
@@ -7,56 +7,16 @@ use iced::advanced::{
     Widget,
 };
 
-use crate::{animate::Animate, animation::Animation, curve::Curve};
-
-/// The default duration for animations.
-pub const DEFAULT_DURATION: Duration = Duration::from_millis(300);
-
-pub struct State<T>
-where
-    T: 'static + Animate + Clone + PartialEq,
-{
-    final_value: T,
-    initial_value: T,
-    current_value: T,
-    duration: Duration,
-    animation: Animation,
-}
-
-impl<T> State<T>
-where
-    T: 'static + Animate + Clone + PartialEq,
-{
-    pub fn new(value: T) -> Self {
-        Self {
-            final_value: value.clone(),
-            initial_value: value.clone(),
-            current_value: value,
-            duration: DEFAULT_DURATION,
-            animation: Animation::Stopped,
-        }
-    }
-
-    pub fn restart_with(&mut self, value: T) {
-        self.final_value = value.clone();
-        self.initial_value = self.current_value.clone();
-        self.animation = Animation::Running {
-            start: Instant::now(),
-            duration: self.duration,
-        };
-    }
-}
+use crate::{animate::Animate, Spring};
 
 pub struct AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
-    T: 'static + Animate + Clone + PartialEq,
+    T: 'static + Animate,
 {
     value: T,
     builder: Box<dyn Fn(T) -> iced::Element<'a, Message, Theme, Renderer> + 'a>,
-    /// The curve to apply to the animation.
-    curve: Curve,
-    /// How long it takes to complete an animation between values.
-    duration: Duration,
+    spring: Spring<T>,
+    last_update: Instant,
     /// Whether the layout will be affected by the animated value.
     animates_layout: bool,
     cached_element: iced::Element<'a, Message, Theme, Renderer>,
@@ -72,23 +32,13 @@ where
     ) -> Self {
         let element = (builder)(value.clone());
         Self {
-            value,
+            value: value.clone(),
             builder: Box::new(builder),
             cached_element: element,
-            curve: Curve::default(),
-            duration: DEFAULT_DURATION,
+            spring: Spring::new(value),
+            last_update: Instant::now(),
             animates_layout: false,
         }
-    }
-
-    pub fn curve(mut self, curve: Curve) -> Self {
-        self.curve = curve;
-        self
-    }
-
-    pub fn duration(mut self, duration: Duration) -> Self {
-        self.duration = duration;
-        self
     }
 
     /// Indicates whether this widget should invalidate the application layout
@@ -127,23 +77,18 @@ where
     }
 
     fn state(&self) -> tree::State {
-        tree::State::new(State::new(self.value.clone()))
+        tree::State::new(Spring::new(self.value.clone()))
     }
 
     fn tag(&self) -> tree::Tag {
-        tree::Tag::of::<State<T>>()
+        tree::Tag::of::<Spring<T>>()
     }
 
     fn diff(&self, tree: &mut Tree) {
-        let state = tree.state.downcast_mut::<State<T>>();
-
-        if state.final_value != self.value {
-            // Value from the outside changed, adjust the target value
-            state.restart_with(self.value.clone());
-        }
-
-        if state.duration != self.duration {
-            state.duration = self.duration;
+        // Update the spring's target if it has changed
+        let state = tree.state.downcast_mut::<Spring<T>>();
+        if state.target() != self.spring.value() {
+            state.set_target(self.spring.target().clone());
         }
 
         tree.diff_children(std::slice::from_ref(&self.cached_element));
@@ -258,10 +203,10 @@ where
             return event::Status::Captured;
         }
 
-        let state = tree.state.downcast_mut::<State<T>>();
+        let spring = tree.state.downcast_mut::<Spring<T>>();
 
-        // Request a redraw if the current value doesn't match the final value.
-        if state.current_value != state.final_value {
+        // Request a redraw if the spring has remaining energy
+        if spring.has_energy() {
             shell.request_redraw(iced::window::RedrawRequest::NextFrame);
             // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {
@@ -270,21 +215,15 @@ where
         }
 
         if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
-            if state.current_value == state.final_value {
-                state.animation.stop();
-                state.initial_value = state.final_value.clone();
+            if !spring.has_energy() {
                 return event::Status::Ignored;
             }
 
             // Update the animation and request a redraw
-            state.animation.update(now);
-            let progress = state.animation.progress(now);
-            let new_value =
-                state
-                    .initial_value
-                    .animate_to(&state.final_value, progress, self.curve);
-            state.current_value = new_value;
-            self.cached_element = (self.builder)(state.current_value.clone());
+            let dt = now.duration_since(self.last_update).as_secs_f32();
+            spring.update(dt);
+            self.cached_element = (self.builder)(spring.value().clone());
+            self.last_update = now;
         }
 
         event::Status::Ignored

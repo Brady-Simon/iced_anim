@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use iced::{
     widget::{container, MouseArea, Space},
     Border, Color, Element, Length, Padding, Point, Size, Subscription, Theme,
@@ -15,7 +13,9 @@ enum Message {
 }
 
 struct State {
+    /// The current position of the bubble in the window.
     position: Point,
+    /// The size of the window to help generate a color.
     size: Size<u32>,
 }
 
@@ -81,8 +81,7 @@ impl State {
                 .on_move(Message::MoveTo)
                 .into()
             })
-            .duration(Duration::from_millis(150))
-            .curve(iced_anim::Curve::Linear)
+            // .duration(Duration::from_millis(150))
             .animates_layout(true),
         )
         .width(Length::Fill)
