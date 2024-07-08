@@ -1,3 +1,7 @@
+use std::sync::Arc;
+
+use iced::theme::palette;
+
 pub trait Animate: Clone + PartialEq {
     fn components() -> usize;
     fn update(&mut self, components: &mut impl Iterator<Item = f32>);
@@ -56,188 +60,211 @@ impl Animate for iced::Color {
     }
 }
 
-// impl Animate for iced::theme::Palette {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         let background = self.background.animate_to(&end.background, progress, curve);
-//         let text = self.text.animate_to(&end.text, progress, curve);
-//         let primary = self.primary.animate_to(&end.primary, progress, curve);
-//         let success = self.success.animate_to(&end.success, progress, curve);
-//         let danger = self.danger.animate_to(&end.danger, progress, curve);
-//         Self {
-//             background,
-//             text,
-//             primary,
-//             success,
-//             danger,
-//         }
-//     }
+impl Animate for iced::theme::Palette {
+    fn components() -> usize {
+        5 * iced::Color::components()
+    }
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(
-//             self.background.distance_to(&end.background),
-//             self.text.distance_to(&end.text),
-//             self.primary.distance_to(&end.primary),
-//             self.success.distance_to(&end.success),
-//             self.danger.distance_to(&end.danger),
-//         )
-//     }
-// }
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.background.update(components);
+        self.text.update(components);
+        self.primary.update(components);
+        self.success.update(components);
+        self.danger.update(components);
+    }
 
-// impl Animate for iced::Theme {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         match progress {
-//             ..=0.0 => self.clone(),
-//             1.0.. => end.clone(),
-//             _ => iced::Theme::custom(
-//                 if progress < 0.5 {
-//                     self.to_string()
-//                 } else {
-//                     end.to_string()
-//                 },
-//                 self.palette().animate_to(&end.palette(), progress, curve),
-//             ),
-//         }
-//     }
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.background.distance_to(&end.background),
+            self.text.distance_to(&end.text),
+            self.primary.distance_to(&end.primary),
+            self.success.distance_to(&end.success),
+            self.danger.distance_to(&end.danger),
+        ]
+        .concat()
+    }
+}
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         self.palette().distance_to(&end.palette())
-//     }
-// }
+impl Animate for iced::Theme {
+    fn components() -> usize {
+        iced::theme::Palette::components() + iced::theme::palette::Extended::components()
+    }
 
-// impl Animate for iced::theme::palette::Pair {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         let color = self.color.animate_to(&end.color, progress, curve);
-//         let text = self.text.animate_to(&end.text, progress, curve);
-//         Self { color, text }
-//     }
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        let mut palette = self.palette().clone();
+        palette.update(components);
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(
-//             self.color.distance_to(&end.color),
-//             self.text.distance_to(&end.text)
-//         )
-//     }
-// }
+        let mut extended = self.extended_palette().clone();
+        extended.update(components);
 
-// impl Animate for iced::theme::palette::Primary {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         let strong = self.strong.animate_to(&end.strong, progress, curve);
-//         let base = self.base.animate_to(&end.base, progress, curve);
-//         let weak = self.weak.animate_to(&end.weak, progress, curve);
-//         Self { strong, base, weak }
-//     }
+        *self = iced::Theme::Custom(Arc::new(iced::theme::Custom::with_fn(
+            "Animating Theme".to_owned(),
+            palette,
+            move |_| extended,
+        )))
+    }
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(
-//             self.strong.distance_to(&end.strong),
-//             self.base.distance_to(&end.base),
-//             self.weak.distance_to(&end.weak),
-//         )
-//     }
-// }
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.palette().distance_to(&end.palette()),
+            self.extended_palette().distance_to(&end.extended_palette()),
+        ]
+        .concat()
+    }
+}
 
-// impl Animate for iced::theme::palette::Secondary {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         let strong = self.strong.animate_to(&end.strong, progress, curve);
-//         let base = self.base.animate_to(&end.base, progress, curve);
-//         let weak = self.weak.animate_to(&end.weak, progress, curve);
-//         Self { strong, base, weak }
-//     }
+impl Animate for palette::Pair {
+    fn components() -> usize {
+        2 * iced::Color::components()
+    }
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(
-//             self.strong.distance_to(&end.strong),
-//             self.base.distance_to(&end.base),
-//             self.weak.distance_to(&end.weak),
-//         )
-//     }
-// }
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.color.update(components);
+        self.text.update(components);
+    }
 
-// impl Animate for iced::theme::palette::Success {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         let strong = self.strong.animate_to(&end.strong, progress, curve);
-//         let base = self.base.animate_to(&end.base, progress, curve);
-//         let weak = self.weak.animate_to(&end.weak, progress, curve);
-//         Self { strong, base, weak }
-//     }
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.color.distance_to(&end.color),
+            self.text.distance_to(&end.text),
+        ]
+        .concat()
+    }
+}
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(
-//             self.strong.distance_to(&end.strong),
-//             self.base.distance_to(&end.base),
-//             self.weak.distance_to(&end.weak),
-//         )
-//     }
-// }
+impl Animate for palette::Primary {
+    fn components() -> usize {
+        3 * palette::Pair::components()
+    }
 
-// impl Animate for iced::theme::palette::Danger {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         let strong = self.strong.animate_to(&end.strong, progress, curve);
-//         let base = self.base.animate_to(&end.base, progress, curve);
-//         let weak = self.weak.animate_to(&end.weak, progress, curve);
-//         Self { strong, base, weak }
-//     }
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.strong.update(components);
+        self.base.update(components);
+        self.weak.update(components);
+    }
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(
-//             self.strong.distance_to(&end.strong),
-//             self.base.distance_to(&end.base),
-//             self.weak.distance_to(&end.weak),
-//         )
-//     }
-// }
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.strong.distance_to(&end.strong),
+            self.base.distance_to(&end.base),
+            self.weak.distance_to(&end.weak),
+        ]
+        .concat()
+    }
+}
 
-// impl Animate for iced::theme::palette::Background {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         let strong = self.strong.animate_to(&end.strong, progress, curve);
-//         let base = self.base.animate_to(&end.base, progress, curve);
-//         let weak = self.weak.animate_to(&end.weak, progress, curve);
-//         Self { strong, base, weak }
-//     }
+impl Animate for palette::Secondary {
+    fn components() -> usize {
+        3 * palette::Pair::components()
+    }
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(
-//             self.strong.distance_to(&end.strong),
-//             self.base.distance_to(&end.base),
-//             self.weak.distance_to(&end.weak),
-//         )
-//     }
-// }
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.strong.update(components);
+        self.base.update(components);
+        self.weak.update(components);
+    }
 
-// impl Animate for iced::theme::palette::Extended {
-//     fn animate_to(&self, end: &Self, progress: f32, curve: Curve) -> Self {
-//         let is_dark = if progress < 0.5 {
-//             self.is_dark
-//         } else {
-//             end.is_dark
-//         };
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.strong.distance_to(&end.strong),
+            self.base.distance_to(&end.base),
+            self.weak.distance_to(&end.weak),
+        ]
+        .concat()
+    }
+}
 
-//         let primary = self.primary.animate_to(&end.primary, progress, curve);
-//         let secondary = self.secondary.animate_to(&end.secondary, progress, curve);
-//         let success = self.success.animate_to(&end.success, progress, curve);
-//         let danger = self.danger.animate_to(&end.danger, progress, curve);
-//         let background = self.background.animate_to(&end.background, progress, curve);
+impl Animate for palette::Success {
+    fn components() -> usize {
+        3 * palette::Pair::components()
+    }
 
-//         Self {
-//             is_dark,
-//             primary,
-//             secondary,
-//             success,
-//             danger,
-//             background,
-//         }
-//     }
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.strong.update(components);
+        self.base.update(components);
+        self.weak.update(components);
+    }
 
-//     fn distance_to(&self, end: &Self) -> f32 {
-//         euclidean_distance!(
-//             self.primary.distance_to(&end.primary),
-//             self.secondary.distance_to(&end.secondary),
-//             self.success.distance_to(&end.success),
-//             self.danger.distance_to(&end.danger),
-//             self.background.distance_to(&end.background),
-//         )
-//     }
-// }
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.strong.distance_to(&end.strong),
+            self.base.distance_to(&end.base),
+            self.weak.distance_to(&end.weak),
+        ]
+        .concat()
+    }
+}
+
+impl Animate for palette::Danger {
+    fn components() -> usize {
+        3 * palette::Pair::components()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.strong.update(components);
+        self.base.update(components);
+        self.weak.update(components);
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.strong.distance_to(&end.strong),
+            self.base.distance_to(&end.base),
+            self.weak.distance_to(&end.weak),
+        ]
+        .concat()
+    }
+}
+
+impl Animate for palette::Background {
+    fn components() -> usize {
+        3 * palette::Pair::components()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.strong.update(components);
+        self.base.update(components);
+        self.weak.update(components);
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.strong.distance_to(&end.strong),
+            self.base.distance_to(&end.base),
+            self.weak.distance_to(&end.weak),
+        ]
+        .concat()
+    }
+}
+
+impl Animate for palette::Extended {
+    fn components() -> usize {
+        palette::Background::components()
+            + palette::Primary::components()
+            + palette::Secondary::components()
+            + palette::Success::components()
+            + palette::Danger::components()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.primary.update(components);
+        self.secondary.update(components);
+        self.success.update(components);
+        self.danger.update(components);
+        self.background.update(components);
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        vec![
+            self.primary.distance_to(&end.primary),
+            self.secondary.distance_to(&end.secondary),
+            self.success.distance_to(&end.success),
+            self.danger.distance_to(&end.danger),
+            self.background.distance_to(&end.background),
+        ]
+        .concat()
+    }
+}
 
 impl<T1, T2> Animate for (T1, T2)
 where
@@ -258,37 +285,90 @@ where
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-//     /// f32 values should animate correctly.
-//     #[test]
-//     fn animate_f32() {
-//         let start = 0.0;
-//         let end = 10.0;
-//         let animated = start.animate_to(&end, 0.5, Curve::Linear);
+    #[test]
+    fn f32_components() {
+        assert_eq!(f32::components(), 1);
+    }
 
-//         assert_eq!(animated, 5.0);
-//     }
+    #[test]
+    fn f32_point_components() {
+        assert_eq!(iced::Point::<f32>::components(), 2);
+    }
 
-//     /// Animations can go in any direction.
-//     #[test]
-//     fn animate_f32_backwards() {
-//         let start = 10.0;
-//         let end = 0.0;
-//         let animated = start.animate_to(&end, 0.5, Curve::Linear);
+    #[test]
+    fn f32_color_components() {
+        assert_eq!(iced::Color::components(), 4);
+    }
 
-//         assert_eq!(animated, 5.0);
-//     }
+    #[test]
+    fn color_pair_components() {
+        assert_eq!(
+            iced::theme::palette::Pair::components(),
+            2 * iced::Color::components()
+        );
+    }
 
-//     /// Iced colors should animate correctly.
-//     #[test]
-//     fn animate_color() {
-//         let start = iced::Color::BLACK;
-//         let end = iced::Color::WHITE;
-//         let animated = start.animate_to(&end, 0.5, Curve::Linear);
+    #[test]
+    fn primary_components() {
+        assert_eq!(
+            iced::theme::palette::Primary::components(),
+            3 * iced::theme::palette::Pair::components()
+        );
+    }
 
-//         assert_eq!(animated, iced::Color::from_rgb(0.5, 0.5, 0.5));
-//     }
-// }
+    #[test]
+    fn secondary_components() {
+        assert_eq!(
+            iced::theme::palette::Secondary::components(),
+            3 * iced::theme::palette::Pair::components()
+        );
+    }
+
+    #[test]
+    fn success_components() {
+        assert_eq!(
+            iced::theme::palette::Success::components(),
+            3 * iced::theme::palette::Pair::components()
+        );
+    }
+
+    #[test]
+    fn danger_components() {
+        assert_eq!(
+            iced::theme::palette::Danger::components(),
+            3 * iced::theme::palette::Pair::components()
+        );
+    }
+
+    #[test]
+    fn background_components() {
+        assert_eq!(
+            iced::theme::palette::Background::components(),
+            3 * iced::theme::palette::Pair::components()
+        );
+    }
+
+    #[test]
+    fn extended_palette_components() {
+        assert_eq!(
+            iced::theme::palette::Extended::components(),
+            iced::theme::palette::Background::components()
+                + iced::theme::palette::Primary::components()
+                + iced::theme::palette::Secondary::components()
+                + iced::theme::palette::Success::components()
+                + iced::theme::palette::Danger::components()
+        );
+    }
+
+    #[test]
+    fn theme_components() {
+        assert_eq!(
+            iced::Theme::components(),
+            iced::theme::Palette::components() + iced::theme::palette::Extended::components()
+        );
+    }
+}

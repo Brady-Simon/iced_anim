@@ -12,6 +12,7 @@ pub const DEFAULT_DAMPING: f32 = 0.825;
 
 pub const DEFAULT_DURATION: Duration = Duration::from_millis(500);
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Spring<T: Animate> {
     value: T,
     target: T,
@@ -112,8 +113,8 @@ where
 
     /// Gets the new velocity of the spring given the `displacement` and `velocity`.
     fn new_velocity(&self, displacement: f32, velocity: f32, dt: f32) -> f32 {
-        let spring: f32 = displacement * self.applied_stiffness(DEFAULT_DURATION);
-        let damping = -self.applied_damping(DEFAULT_DURATION) * velocity;
+        let spring: f32 = displacement * self.applied_stiffness(self.duration);
+        let damping = -self.applied_damping(self.duration) * velocity;
 
         let acceleration = spring + damping;
         let new_velocity = velocity + acceleration * dt;

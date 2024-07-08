@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use iced::advanced::{
     graphics::core::{event, Element},
@@ -13,7 +13,6 @@ pub struct AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
 {
-    value: T,
     builder: Box<dyn Fn(T) -> iced::Element<'a, Message, Theme, Renderer> + 'a>,
     spring: Spring<T>,
     last_update: Instant,
@@ -32,13 +31,17 @@ where
     ) -> Self {
         let element = (builder)(value.clone());
         Self {
-            value: value.clone(),
             builder: Box::new(builder),
             cached_element: element,
             spring: Spring::new(value),
             last_update: Instant::now(),
             animates_layout: false,
         }
+    }
+
+    pub fn duration(mut self, duration: Duration) -> Self {
+        self.spring = self.spring.with_duration(duration);
+        self
     }
 
     /// Indicates whether this widget should invalidate the application layout
@@ -77,7 +80,7 @@ where
     }
 
     fn state(&self) -> tree::State {
-        tree::State::new(Spring::new(self.value.clone()))
+        tree::State::new(self.spring.clone())
     }
 
     fn tag(&self) -> tree::Tag {
