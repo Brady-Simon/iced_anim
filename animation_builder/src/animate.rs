@@ -2,9 +2,33 @@ use std::sync::Arc;
 
 use iced::theme::palette;
 
+/// A trait for types that can be animated on a per-property basis.
+///
+/// You can derive this trait with `#[derive(Animate)]` with the `derive` feature enabled.
+/// Otherwise, you can manually implement it while ensuring that `Animate::components` returns
+/// the same length vector as `Animate::distance_to` returns.
+///
+/// Also, ensure that `Animate::update` and `Animate::distance_to` are consistent with each other
+/// in both the number of components consumed and the order of the components. Keeping these in
+/// sync is important to ensure that updates affect the correct properties.
 pub trait Animate: Clone + PartialEq {
+    /// The number if animatable components in the type.
+    ///
+    /// Simple types like `f32` have 1 component, while more complex types like `Color` have 4.
+    /// This is used so the animation knows how many properties may be animated.
     fn components() -> usize;
+
+    /// Update the type with the next set of components.
+    ///
+    /// The `components` is an iterator of new fractional values that should be added to the
+    /// current value.
     fn update(&mut self, components: &mut impl Iterator<Item = f32>);
+
+    /// The distance between the current value and the end value.
+    ///
+    /// The `end` value is the target value that the current value should be animated towards.
+    /// This distance can be positive or negative and returns a vector that should be consistent
+    /// with `Animate::components` and the update order in `Animate::update`.
     fn distance_to(&self, end: &Self) -> Vec<f32>;
 }
 

@@ -37,6 +37,9 @@ impl<T> Spring<T>
 where
     T: Animate,
 {
+    /// Creates a new `Spring` with the initial `value`.
+    ///
+    /// Use the builder methods to customize the spring's behavior and target.
     pub fn new(value: T) -> Self {
         Self {
             value: value.clone(),
@@ -69,20 +72,27 @@ where
         self
     }
 
+    /// Sets the duration of the spring, which affects applied the stiffness and damping.
+    /// This also resets the remaining time to the new duration.
     pub fn with_duration(mut self, duration: Duration) -> Self {
         self.duration = duration;
         self.remaining = duration;
         self
     }
 
+    /// Returns a reference to this spring's current value.
     pub fn value(&self) -> &T {
         &self.value
     }
 
+    /// Returns a reference to this spring's current target.
     pub fn target(&self) -> &T {
         &self.target
     }
 
+    /// Updates the spring's value based on the elapsed time since the last update.
+    /// The spring will automatically reach its target when the remaining time reaches zero.
+    /// This function will do nothing if the spring has no energy.
     pub fn update(&mut self, dt: Duration) {
         // Don't attempt to update anything if the spring has no energy.
         if !self.has_energy() {
@@ -141,6 +151,7 @@ where
     }
 
     /// A spring has energy if it has not yet reached its target or if it is still moving.
+    /// This being `true` means the spring is at rest and doesn't need to be updated.
     pub fn has_energy(&self) -> bool {
         self.value != self.target || self.velocity.iter().any(|&v| v != 0.0)
     }

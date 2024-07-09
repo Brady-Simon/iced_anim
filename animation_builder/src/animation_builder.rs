@@ -9,15 +9,25 @@ use iced::advanced::{
 
 use crate::{animate::Animate, Spring};
 
+/// A widget that implicitly animates a value anytime it changes.
+///
+/// This is useful for animating changes to a widget's appearance or layout
+/// based on some state change. Animations happen automatically when the value
+/// changes, and the widget will use spring interpolation to animate the value
+/// over a specified duration.
 pub struct AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
 {
+    /// The function that builds the element using the animated value.
     builder: Box<dyn Fn(T) -> iced::Element<'a, Message, Theme, Renderer> + 'a>,
+    /// The spring that animates the value of this widget.
     spring: Spring<T>,
+    /// The last instant at which this widget animation was updated.
     last_update: Instant,
     /// Whether the layout will be affected by the animated value.
     animates_layout: bool,
+    /// The cached element built using the most recent animated value and `builder`.
     cached_element: iced::Element<'a, Message, Theme, Renderer>,
 }
 
