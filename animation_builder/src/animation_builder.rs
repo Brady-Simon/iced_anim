@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use iced::advanced::{
     graphics::core::{event, Element},
@@ -7,7 +7,7 @@ use iced::advanced::{
     Widget,
 };
 
-use crate::{animate::Animate, Spring};
+use crate::{animate::Animate, Spring, SpringMotion};
 
 /// A widget that implicitly animates a value anytime it changes.
 ///
@@ -49,8 +49,8 @@ where
         }
     }
 
-    pub fn duration(mut self, duration: Duration) -> Self {
-        self.spring = self.spring.with_duration(duration);
+    pub fn motion(mut self, motion: SpringMotion) -> Self {
+        self.spring = self.spring.with_motion(motion);
         self
     }
 
@@ -102,6 +102,10 @@ where
         let state = tree.state.downcast_mut::<Spring<T>>();
         if state.target() != self.spring.value() {
             state.interrupt(self.spring.target().clone());
+        }
+
+        if state.motion() != self.spring.motion() {
+            state.use_motion(self.spring.motion())
         }
 
         tree.diff_children(std::slice::from_ref(&self.cached_element));
@@ -221,7 +225,6 @@ where
         let has_energy = spring.has_energy();
         // Request a redraw if the spring has remaining energy
         if has_energy {
-            // spring.update(self.last_update.elapsed().as_secs_f32());
             shell.request_redraw(iced::window::RedrawRequest::NextFrame);
             // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {

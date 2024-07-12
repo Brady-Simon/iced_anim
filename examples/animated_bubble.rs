@@ -1,8 +1,10 @@
+use std::time::Duration;
+
 use iced::{
     widget::{container, MouseArea, Space},
     Border, Color, Element, Length, Padding, Point, Size, Subscription, Theme,
 };
-use iced_anim::animation_builder::AnimationBuilder;
+use iced_anim::{animation_builder::AnimationBuilder, SpringMotion};
 
 const BUBBLE_SIZE: f32 = 50.0;
 
@@ -46,6 +48,7 @@ impl State {
         }
     }
 
+    /// Listens for window resize events to ensure the bubble color is accurate.
     fn subscription(&self) -> Subscription<Message> {
         iced::event::listen_with(|event, _, _| match event {
             iced::Event::Window(iced::window::Event::Resized { width, height }) => {
@@ -80,6 +83,10 @@ impl State {
                 )
                 .on_move(Message::MoveTo)
                 .into()
+            })
+            .motion(SpringMotion::Custom {
+                response: Duration::from_millis(500),
+                damping: 0.6,
             })
             .animates_layout(true),
         )

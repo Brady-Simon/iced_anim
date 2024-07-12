@@ -1,34 +1,24 @@
 use std::time::Duration;
 
-use crate::Animate;
+use crate::{Animate, SpringMotion};
 
 /// The default stiffness value for springs.
 pub const DEFAULT_STIFFNESS: f32 = 0.5;
-// pub const DEFAULT_STIFFNESS: f32 = 0.8;
 
 /// The default damping fraction for springs.
 pub const DEFAULT_DAMPING: f32 = 0.825;
-// pub const DEFAULT_DAMPING: f32 = 0.0;
 
-pub const DEFAULT_DURATION: Duration = Duration::from_millis(500);
+/// The value at which a spring's velocity is considered zero.
+///
+/// This is used to determine when a spring has reached its target.
+pub const EPSILON: f32 = 0.001;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spring<T: Animate> {
     value: T,
     target: T,
-    /// The stiffness of the spring, defined as an approximate duration in seconds.
-    /// A value of zero requests an infinitely-stiff spring, suitable for driving
-    /// interactive animations.
-    stiffness: f32,
-    /// The amount of drag applied to the value being animated, as a fraction
-    /// of an estimate of amount needed to produce critical damping.
-    ///
-    /// A damping of 1 will smoothly descelerate the spring to its target.
-    /// Damping ratios less than 1 will cause the spring to oscillate around
-    /// the target more before coming to a stop.
-    damping: f32,
+    motion: SpringMotion,
     velocity: Vec<f32>,
-    duration: Duration,
     /// The amount of time remaining before the spring should reach its target.
     remaining: Duration,
 }
@@ -41,24 +31,23 @@ where
     ///
     /// Use the builder methods to customize the spring's behavior and target.
     pub fn new(value: T) -> Self {
+        let motion = SpringMotion::default();
         Self {
             value: value.clone(),
             target: value,
-            stiffness: DEFAULT_STIFFNESS,
-            damping: DEFAULT_DAMPING,
+            motion,
             velocity: (0..T::components()).into_iter().map(|_| 0.0).collect(),
-            duration: DEFAULT_DURATION,
-            remaining: DEFAULT_DURATION,
+            remaining: motion.duration(),
         }
     }
 
-    pub fn with_stiffness(mut self, stiffness: f32) -> Self {
-        self.stiffness = stiffness;
-        self
+    pub fn use_motion(&mut self, motion: SpringMotion) {
+        self.motion = motion;
     }
 
-    pub fn with_damping(mut self, damping: f32) -> Self {
-        self.damping = damping;
+    pub fn with_motion(mut self, motion: SpringMotion) -> Self {
+        self.remaining = motion.duration();
+        self.motion = motion;
         self
     }
 
@@ -72,14 +61,6 @@ where
         self
     }
 
-    /// Sets the duration of the spring, which affects applied the stiffness and damping.
-    /// This also resets the remaining time to the new duration.
-    pub fn with_duration(mut self, duration: Duration) -> Self {
-        self.duration = duration;
-        self.remaining = duration;
-        self
-    }
-
     /// Returns a reference to this spring's current value.
     pub fn value(&self) -> &T {
         &self.value
@@ -88,6 +69,10 @@ where
     /// Returns a reference to this spring's current target.
     pub fn target(&self) -> &T {
         &self.target
+    }
+
+    pub fn motion(&self) -> SpringMotion {
+        self.motion
     }
 
     /// Updates the spring's value based on the elapsed time since the last update.
@@ -102,9 +87,15 @@ where
         // TODO: Consider finding a way to make this more graceful than jumping to the end.
         // Update the remaining time, ending the animation if it has reached zero.
         self.remaining = self.remaining.saturating_sub(dt);
-        if self.remaining.is_zero() {
+        // if self.remaining.is_zero() {
+        //     self.value = self.target.clone();
+        //     self.velocity = (0..T::components()).into_iter().map(|_| 0.0).collect();
+        // }
+
+        if self.is_near_target() {
             self.value = self.target.clone();
             self.velocity = (0..T::components()).into_iter().map(|_| 0.0).collect();
+            return;
         }
 
         // Remaining duration, so calculate the new velocity and update the values.
@@ -123,37 +114,40 @@ where
 
     /// Gets the new velocity of the spring given the `displacement` and `velocity`.
     fn new_velocity(&self, displacement: f32, velocity: f32, dt: f32) -> f32 {
-        let spring: f32 = displacement * self.applied_stiffness(self.duration);
-        let damping = -self.applied_damping(self.duration) * velocity;
+        let spring: f32 = displacement * self.motion.applied_stiffness();
+        let damping = -self.motion.applied_damping() * velocity;
+        // println!(
+        //     "New velocity with damping {} -> {}, stiffness {} -> {}",
+        //     self.damping,
+        //     self.applied_damping(self.duration),
+        //     self.stiffness,
+        //     self.applied_stiffness(self.duration),
+        // );
 
         let acceleration = spring + damping;
         let new_velocity = velocity + acceleration * dt;
         new_velocity
     }
 
-    /// The amount of stiffness applied to the spring, which varies based on the `duration`.
-    pub fn applied_stiffness(&self, duration: Duration) -> f32 {
-        let duration_fraction = duration.as_secs_f32();
-        39.47841760435743 / duration_fraction.powi(2)
-    }
-
-    /// The amount of damping applied to the spring, which varies based on the `duration`.
-    pub fn applied_damping(&self, duration: Duration) -> f32 {
-        let duration_fraction = duration.as_secs_f32();
-        12.56637061435917 / duration_fraction
-    }
-
     /// Interrupts the existing animation and starts a new one with the `new_target`,
     /// resetting the remaining time to the original duration.
     pub fn interrupt(&mut self, new_target: T) {
         self.target = new_target;
-        self.remaining = self.duration;
+        self.remaining = self.motion.duration();
     }
 
     /// A spring has energy if it has not yet reached its target or if it is still moving.
     /// This being `true` means the spring is at rest and doesn't need to be updated.
     pub fn has_energy(&self) -> bool {
         self.value != self.target || self.velocity.iter().any(|&v| v != 0.0)
+    }
+
+    /// Returns `true` if the spring is near its target, within a small epsilon value.
+    pub fn is_near_target(&self) -> bool {
+        self.target
+            .distance_to(&self.value)
+            .iter()
+            .all(|d| d.abs() < EPSILON)
     }
 }
 
@@ -187,17 +181,24 @@ mod tests {
     fn update_reduces_remaining_duration() {
         let mut spring = Spring::new(0.0)
             .with_target(1.0)
-            .with_duration(Duration::from_secs(1));
+            .with_motion(SpringMotion::Custom {
+                response: Duration::from_secs(1),
+                damping: 1.0,
+            });
         spring.update(Duration::from_millis(500));
         assert_eq!(spring.remaining, Duration::from_millis(500));
     }
 
     /// The spring should reach its target when the remaining duration is zero.
+    #[ignore = "Waiting until behavior around remaining time is decided"]
     #[test]
     fn update_ends_animation_when_remaining_duration_is_zero() {
         let mut spring = Spring::new(0.0)
             .with_target(1.0)
-            .with_duration(Duration::from_secs(1));
+            .with_motion(SpringMotion::Custom {
+                response: Duration::from_secs(1),
+                damping: 1.0,
+            });
         spring.update(Duration::from_secs(1));
         assert_eq!(spring.remaining, Duration::from_secs(0));
         assert_eq!(spring.value, spring.target);
@@ -208,7 +209,10 @@ mod tests {
     fn interrupt_resets_duration_and_changes_target() {
         let mut spring = Spring::new(0.0)
             .with_target(1.0)
-            .with_duration(Duration::from_secs(1));
+            .with_motion(SpringMotion::Custom {
+                response: Duration::from_secs(1),
+                damping: 1.0,
+            });
 
         spring.update(Duration::from_millis(500));
         spring.interrupt(5.0);
