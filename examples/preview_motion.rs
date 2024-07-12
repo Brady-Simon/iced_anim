@@ -1,5 +1,5 @@
 use iced::{
-    widget::{button, column, container, pick_list, row, text, Column, Row, Space, Stack},
+    widget::{button, column, container, pick_list, row, stack, text, Column, Row, Space},
     Border, Element, Length,
 };
 use iced_anim::{animation_builder::AnimationBuilder, SpringMotion};
@@ -56,14 +56,16 @@ impl State {
         let buttons = row![motion_picker, toggle_button].spacing(8);
 
         let animated_circles = AnimationBuilder::new(self.offset, |offset| {
-            row![
+            stack![
+                track_background(false),
+                track_background(true),
                 // Vertical circle
                 circle_track(offset, false),
                 // Horizontal circle
                 circle_track(MAX_OFFSET - offset, true),
             ]
             .width(Length::Fill)
-            .spacing(8.0)
+            .height(Length::Fill)
             .into()
         })
         .motion(self.motion)
@@ -76,7 +78,7 @@ impl State {
     }
 }
 
-fn circle_track<'a>(offset: f32, is_horizontal: bool) -> Element<'a, Message> {
+fn track_background<'a>(is_horizontal: bool) -> Element<'a, Message> {
     let width: Length = if is_horizontal {
         Length::Fill
     } else {
@@ -93,23 +95,23 @@ fn circle_track<'a>(offset: f32, is_horizontal: bool) -> Element<'a, Message> {
         Space::with_height(MAX_OFFSET - CIRCLE_DIAMETER)
     };
 
-    let track_items = vec![circle(false, offset), spacer.into(), circle(false, offset)];
+    let track_items = vec![circle(None), spacer.into(), circle(None)];
     let track_circles: Element<'a, Message, _, _> = if is_horizontal {
         Row::with_children(track_items).into()
     } else {
         Column::with_children(track_items).into()
     };
-    let track_background = container(track_circles).width(width).height(height);
+    container(track_circles).width(width).height(height).into()
+}
 
-    let mut track = Stack::new().push(track_background);
-
-    let main_track_circle: Element<'a, Message, _, _> = if is_horizontal {
+fn circle_track<'a>(offset: f32, is_horizontal: bool) -> Element<'a, Message> {
+    if is_horizontal {
         Row::new()
             .push(Space::new(
                 Length::Fixed(offset),
                 Length::Fixed(CIRCLE_DIAMETER),
             ))
-            .push(circle(true, offset))
+            .push(circle(Some(offset)))
             .into()
     } else {
         Column::new()
@@ -117,19 +119,15 @@ fn circle_track<'a>(offset: f32, is_horizontal: bool) -> Element<'a, Message> {
                 Length::Fixed(CIRCLE_DIAMETER),
                 Length::Fixed(offset),
             ))
-            .push(circle(true, offset))
+            .push(circle(Some(offset)))
             .into()
-    };
-
-    track = track.push(main_track_circle);
-
-    track.into()
+    }
 }
 
-fn circle<'a>(is_active: bool, offset: f32) -> Element<'a, Message> {
+fn circle<'a>(offset: Option<f32>) -> Element<'a, Message> {
     container(Space::new(Length::Fill, Length::Fill))
         .style(move |theme: &iced::Theme| {
-            let color = if is_active {
+            let color = if let Some(offset) = offset {
                 circle_color(offset)
             } else {
                 theme.palette().text
@@ -140,7 +138,7 @@ fn circle<'a>(is_active: bool, offset: f32) -> Element<'a, Message> {
                     width: 4.0,
                     radius: (CIRCLE_DIAMETER / 2.0).into(),
                 },
-                background: is_active.then_some(color.into()),
+                background: offset.map(circle_color).map(Into::into),
                 ..Default::default()
             }
         })
