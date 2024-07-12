@@ -29,3 +29,7 @@ path = "derived_animation.rs"
 [[example]]
 name = "animated_bubble"
 path = "animated_bubble.rs"
+
+[[example]]
+name = "preview_motion"
+path = "preview_motion.rs"
