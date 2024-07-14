@@ -257,3 +257,14 @@ where
         event::Status::Ignored
     }
 }
+
+/// A helper function to create an `AnimationBuilder` with a given value and builder function.
+pub fn animation_builder<'a, T, Message, Theme, Renderer>(
+    value: T,
+    builder: impl Fn(T) -> iced::Element<'a, Message, Theme, Renderer> + 'a,
+) -> AnimationBuilder<'a, T, Message, Theme, Renderer>
+where
+    T: 'static + Animate + Clone + PartialEq,
+{
+    AnimationBuilder::new(value, builder)
+}

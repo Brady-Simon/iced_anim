@@ -4,7 +4,7 @@ pub mod spring;
 pub mod spring_motion;
 
 pub use animate::Animate;
-pub use animation_builder::AnimationBuilder;
+pub use animation_builder::*;
 pub use spring::Spring;
 pub use spring_motion::SpringMotion;
 
