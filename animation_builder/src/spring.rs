@@ -114,7 +114,7 @@ where
             .map(|(d, v)| self.new_velocity(d, v, dt.as_secs_f32()))
             .collect();
 
-        self.velocity = velocity.clone();
+        self.velocity.clone_from(&velocity);
         let mut components = velocity.iter().map(|v| v * dt.as_secs_f32());
         self.value.update(&mut components);
     }
@@ -125,7 +125,7 @@ where
         let damping = -self.motion.applied_damping() * velocity;
 
         let acceleration = spring + damping;
-        
+
         velocity + acceleration * dt
     }
 
