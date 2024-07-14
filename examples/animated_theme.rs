@@ -37,7 +37,7 @@ impl State {
                 theme.clone(),
                 container(
                     row![
-                        pick_list(Theme::ALL, Some(theme.clone()), Message::ChangeTheme),
+                        pick_list(Theme::ALL, Some(self.theme.clone()), Message::ChangeTheme),
                         palette_grid(theme.extended_palette()),
                     ]
                     .spacing(8),
