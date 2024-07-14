@@ -57,7 +57,7 @@ impl Animate for iced::Point<f32> {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![self.x.distance_to(&end.x), self.y.distance_to(&end.y)].concat()
+        [self.x.distance_to(&end.x), self.y.distance_to(&end.y)].concat()
     }
 }
 
@@ -74,7 +74,7 @@ impl Animate for iced::Color {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.r.distance_to(&end.r),
             self.g.distance_to(&end.g),
             self.b.distance_to(&end.b),
@@ -98,7 +98,7 @@ impl Animate for iced::theme::Palette {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.background.distance_to(&end.background),
             self.text.distance_to(&end.text),
             self.primary.distance_to(&end.primary),
@@ -115,10 +115,10 @@ impl Animate for iced::Theme {
     }
 
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
-        let mut palette = self.palette().clone();
+        let mut palette = self.palette();
         palette.update(components);
 
-        let mut extended = self.extended_palette().clone();
+        let mut extended = *self.extended_palette();
         extended.update(components);
 
         *self = iced::Theme::Custom(Arc::new(iced::theme::Custom::with_fn(
@@ -129,9 +129,9 @@ impl Animate for iced::Theme {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.palette().distance_to(&end.palette()),
-            self.extended_palette().distance_to(&end.extended_palette()),
+            self.extended_palette().distance_to(end.extended_palette()),
         ]
         .concat()
     }
@@ -148,7 +148,7 @@ impl Animate for palette::Pair {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.color.distance_to(&end.color),
             self.text.distance_to(&end.text),
         ]
@@ -168,7 +168,7 @@ impl Animate for palette::Primary {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.strong.distance_to(&end.strong),
             self.base.distance_to(&end.base),
             self.weak.distance_to(&end.weak),
@@ -189,7 +189,7 @@ impl Animate for palette::Secondary {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.strong.distance_to(&end.strong),
             self.base.distance_to(&end.base),
             self.weak.distance_to(&end.weak),
@@ -210,7 +210,7 @@ impl Animate for palette::Success {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.strong.distance_to(&end.strong),
             self.base.distance_to(&end.base),
             self.weak.distance_to(&end.weak),
@@ -231,7 +231,7 @@ impl Animate for palette::Danger {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.strong.distance_to(&end.strong),
             self.base.distance_to(&end.base),
             self.weak.distance_to(&end.weak),
@@ -252,7 +252,7 @@ impl Animate for palette::Background {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.strong.distance_to(&end.strong),
             self.base.distance_to(&end.base),
             self.weak.distance_to(&end.weak),
@@ -279,7 +279,7 @@ impl Animate for palette::Extended {
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![
+        [
             self.primary.distance_to(&end.primary),
             self.secondary.distance_to(&end.secondary),
             self.success.distance_to(&end.success),
@@ -305,7 +305,7 @@ where
     }
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
-        vec![self.0.distance_to(&end.0), self.1.distance_to(&end.1)].concat()
+        [self.0.distance_to(&end.0), self.1.distance_to(&end.1)].concat()
     }
 }
 

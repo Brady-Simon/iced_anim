@@ -44,8 +44,8 @@ where
             target: value,
             motion,
             total: Duration::ZERO,
-            velocity: (0..T::components()).into_iter().map(|_| 0.0).collect(),
-            initial_distance: (0..T::components()).into_iter().map(|_| 0.0).collect(),
+            velocity: (0..T::components()).map(|_| 0.0).collect(),
+            initial_distance: (0..T::components()).map(|_| 0.0).collect(),
         }
     }
 
@@ -101,7 +101,7 @@ where
         // End the animation if the spring is near the target wiht low velocity.
         if self.is_near_end() {
             self.value = self.target.clone();
-            self.velocity = (0..T::components()).into_iter().map(|_| 0.0).collect();
+            self.velocity = (0..T::components()).map(|_| 0.0).collect();
             return;
         }
 
@@ -125,8 +125,8 @@ where
         let damping = -self.motion.applied_damping() * velocity;
 
         let acceleration = spring + damping;
-        let new_velocity = velocity + acceleration * dt;
-        new_velocity
+        
+        velocity + acceleration * dt
     }
 
     /// Interrupts the existing animation and starts a new one with the `new_target`.

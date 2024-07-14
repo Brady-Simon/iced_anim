@@ -10,17 +10,11 @@ enum Message {
     ChangeTheme(Theme),
 }
 
+#[derive(Default)]
 struct State {
     theme: Theme,
 }
 
-impl Default for State {
-    fn default() -> Self {
-        Self {
-            theme: Theme::default(),
-        }
-    }
-}
 
 impl State {
     fn update(&mut self, message: Message) {

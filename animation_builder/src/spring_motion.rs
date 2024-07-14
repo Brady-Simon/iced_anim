@@ -46,13 +46,13 @@ impl SpringMotion {
 
     pub fn applied_stiffness(&self) -> f32 {
         let duration_fraction = self.duration().as_secs_f32();
-        39.47841760435743 / duration_fraction.powi(2)
+        39.478_416 / duration_fraction.powi(2)
     }
 
     /// The amount of damping applied to the spring, which varies based on the `duration`.
     pub fn applied_damping(&self) -> f32 {
         let duration = self.duration().as_secs_f32();
-        self.damping() * 12.56637061435917 / duration
+        self.damping() * 12.566_371 / duration
     }
 }
 
