@@ -33,3 +33,7 @@ path = "animated_bubble.rs"
 [[example]]
 name = "preview_motion"
 path = "preview_motion.rs"
+
+[[example]]
+name = "animated_drawer"
+path = "animated_drawer.rs"
