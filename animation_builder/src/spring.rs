@@ -9,6 +9,8 @@ use crate::{Animate, SpringMotion};
 /// needlessly when the target is effectively reached.
 pub const ESPILON: f32 = 0.005;
 
+/// A representation of a spring animation that interpolates between values.
+/// You typically won't need to use this directly, but it's used by the `AnimationBuilder`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spring<T: Animate> {
     /// The current value of the spring.
@@ -48,7 +50,7 @@ where
     }
 
     /// Updates the spring's `motion` to the given value.
-    pub fn use_motion(&mut self, motion: SpringMotion) {
+    pub fn set_motion(&mut self, motion: SpringMotion) {
         self.motion = motion;
     }
 

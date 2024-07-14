@@ -2,7 +2,8 @@ use iced::{
     widget::{button, column, container, text},
     Border, Color, Element, Length,
 };
-use iced_anim::{Animate, AnimationBuilder};
+use iced_anim::Animate;
+use iced_anim::AnimationBuilder;
 
 /// A custom struct with all animatable properties that derives `Animate`
 #[derive(Animate, Clone, PartialEq)]

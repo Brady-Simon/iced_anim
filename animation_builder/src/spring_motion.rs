@@ -25,6 +25,9 @@ pub enum SpringMotion {
 }
 
 impl SpringMotion {
+    /// The estimated duration of how long the spring animation.
+    /// This is used in the spring physics calculations and does not represent
+    /// a strict duration for the animation.
     pub fn duration(&self) -> Duration {
         match self {
             Self::Bouncy | Self::Smooth | Self::Snappy => Duration::from_millis(500),

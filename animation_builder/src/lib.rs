@@ -1,13 +1,10 @@
 pub mod animate;
-pub mod animation;
 pub mod animation_builder;
-pub mod curve;
 pub mod spring;
 pub mod spring_motion;
 
 pub use animate::Animate;
 pub use animation_builder::AnimationBuilder;
-pub use curve::Curve;
 pub use spring::Spring;
 pub use spring_motion::SpringMotion;
 

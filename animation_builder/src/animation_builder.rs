@@ -105,7 +105,7 @@ where
         }
 
         if state.motion() != self.spring.motion() {
-            state.use_motion(self.spring.motion())
+            state.set_motion(self.spring.motion())
         }
 
         tree.diff_children(std::slice::from_ref(&self.cached_element));

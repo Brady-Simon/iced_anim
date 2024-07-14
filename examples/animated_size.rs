@@ -48,7 +48,7 @@ impl State {
                     background: Some(theme.extended_palette().secondary.weak.color.into()),
                     ..Default::default()
                 })
-                .center(Length::Fixed(size))
+                .center(size)
                 .into()
         })
         .animates_layout(true);
