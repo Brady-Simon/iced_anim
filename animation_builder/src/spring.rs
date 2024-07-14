@@ -151,7 +151,7 @@ where
             .zip(&self.initial_distance)
             .zip(&self.velocity)
             .all(|((d, i), v)| match i {
-                0.0 => false,
+                0.0 => true,
                 _ => {
                     let d_percent = (d / i).abs();
                     let v_percent = (v / i).abs();
