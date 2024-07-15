@@ -1,7 +1,7 @@
 use iced::{
     advanced::Widget,
     widget::{button, container, horizontal_space, row, text, Space, Stack},
-    Border, Color, Element, Length, Point, Rectangle, Size, Subscription, Theme, Vector,
+    Border, Color, Element, Length, Padding, Point, Rectangle, Size, Subscription, Theme, Vector,
 };
 use iced_anim::animation_builder;
 
@@ -73,26 +73,33 @@ fn drawer<'a>(
         Color::TRANSPARENT
     };
 
+    let motion = iced_anim::SpringMotion::Snappy;
+
     let drawer_stack = Stack::new()
         .width(Length::Fill)
         .height(Length::Fill)
         .push(content)
         .push(
             // Underlay
-            animation_builder(background, move |background| {
-                button(container(Space::new(Length::Fill, Length::Fill)).center(Length::Fill))
-                    .on_press_maybe(is_open.then_some(Message::ToggleDrawer))
-                    .style(move |_, _| iced::widget::button::Style {
-                        background: Some(background.into()),
-                        ..Default::default()
-                    })
-                    .into()
-            }),
+            animation_builder((background, width), move |(background, width)| {
+                container(
+                    button(container(Space::new(Length::Fill, Length::Fill)).center(Length::Fill))
+                        .on_press_maybe(is_open.then_some(Message::ToggleDrawer))
+                        .style(move |_, _| iced::widget::button::Style {
+                            background: Some(background.into()),
+                            ..Default::default()
+                        }),
+                )
+                .padding(Padding::from([0.0, width + PADDING, 0.0, 0.0]))
+                .into()
+            })
+            .motion(motion)
+            .animates_layout(true),
         )
         .push(
             // Drawer content
-            animation_builder(width, move |width| {
-                let offset_x = window_size.width - width - 2.0 * PADDING * width / MAX_WIDTH;
+            animation_builder((background, width), move |(background, width)| {
+                let offset_x = window_size.width - width - PADDING * width / MAX_WIDTH;
                 Offset::new(
                     container(
                         container(drawer_header())
@@ -107,12 +114,16 @@ fn drawer<'a>(
                             .fill_y()
                             .center_x(Length::Fixed(MAX_WIDTH)),
                     )
-                    .padding(PADDING),
+                    .padding(Padding::from([PADDING, PADDING, PADDING, 0.0]))
+                    .style(move |_| iced::widget::container::Style {
+                        background: Some(background.into()),
+                        ..Default::default()
+                    }),
                 )
                 .offset(Point::new(offset_x, 0.0))
                 .into()
             })
-            .motion(iced_anim::SpringMotion::Snappy)
+            .motion(motion)
             .animates_layout(true),
         );
 
