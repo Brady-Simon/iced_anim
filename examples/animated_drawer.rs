@@ -92,6 +92,7 @@ fn drawer<'a>(
         .push(
             // Drawer content
             animation_builder(width, move |width| {
+                let offset_x = window_size.width - width - 2.0 * PADDING * width / MAX_WIDTH;
                 Offset::new(
                     container(
                         container(drawer_header())
@@ -108,7 +109,7 @@ fn drawer<'a>(
                     )
                     .padding(PADDING),
                 )
-                .offset(Point::new(window_size.width - width - 2.0 * PADDING, 0.0))
+                .offset(Point::new(offset_x, 0.0))
                 .into()
             })
             .motion(iced_anim::SpringMotion::Snappy)
