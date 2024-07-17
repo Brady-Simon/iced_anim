@@ -1,17 +1,28 @@
 use iced::{
     advanced::Widget,
-    widget::{button, container, horizontal_space, row, text, Space, Stack},
+    widget::{button, column, container, horizontal_space, row, text, Space, Stack},
     Border, Color, Element, Length, Padding, Point, Rectangle, Size, Subscription, Theme, Vector,
 };
 use iced_anim::animation_builder;
 
+/// Some placeholder text to show within the drawer.
+const LOREM_IPSUM: &'static str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus commodo blandit posuere. Sed pharetra, lacus at pellentesque gravida, purus sem consequat lectus, vel venenatis justo ex ut nibh. Duis quis risus vitae libero volutpat fringilla vitae et magna. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Cras a malesuada nisl, ac scelerisque mauris. Praesent justo turpis, molestie sed dapibus id, mollis nec erat. Nam eu efficitur eros. Nullam condimentum neque at massa varius, ut interdum est sollicitudin. Etiam sit amet libero purus. In enim ipsum, congue in nulla sit amet, condimentum venenatis augue.
+
+Sed bibendum lectus nec erat venenatis, eget suscipit sapien iaculis. Nunc in tellus id nisi maximus iaculis. Cras dignissim rutrum tristique. Integer molestie eros mi. Vestibulum consequat nulla mi, semper elementum lectus dictum eu. Pellentesque facilisis, dolor quis dictum luctus, lacus ipsum cursus nulla, vel laoreet ex enim eu turpis. Proin bibendum finibus tempus. Pellentesque dolor diam, ultricies quis interdum eget, posuere in magna. Curabitur vel congue est. In feugiat posuere dapibus. Morbi purus purus, blandit ut justo sit amet, convallis sagittis libero. Aliquam tempus nisi et nisi mattis, vitae vehicula massa facilisis.";
+
 #[derive(Debug, Clone)]
 enum Message {
+    /// Increments the counter within the drawer.
+    Increment,
+    /// Opens or closes the drawer.
     ToggleDrawer,
+    /// Keeps track of the current window size.
     WindowResized { width: u32, height: u32 },
 }
 
 struct State {
+    /// A counter value shown within the drawer.
+    count: usize,
     /// The current size of the window, which the drawer needs to be offset correctly.
     window_size: Size,
     /// Whether the drawer is currently open.
@@ -21,6 +32,7 @@ struct State {
 impl Default for State {
     fn default() -> Self {
         Self {
+            count: 0,
             window_size: Size::new(1024.0, 768.0),
             is_drawer_open: false,
         }
@@ -30,6 +42,7 @@ impl Default for State {
 impl State {
     fn update(&mut self, message: Message) {
         match message {
+            Message::Increment => self.count += 1,
             Message::ToggleDrawer => {
                 self.is_drawer_open = !self.is_drawer_open;
             }
@@ -51,12 +64,18 @@ impl State {
     fn view(&self) -> Element<Message> {
         let drawer_button =
             container(button(text("Open Drawer")).on_press(Message::ToggleDrawer)).padding(8);
-        drawer(self.is_drawer_open, self.window_size, drawer_button)
+        drawer(
+            self.is_drawer_open,
+            self.count,
+            self.window_size,
+            drawer_button,
+        )
     }
 }
 
 fn drawer<'a>(
     is_open: bool,
+    count: usize,
     window_size: Size,
     content: impl Into<Element<'a, Message>>,
 ) -> Element<'a, Message> {
@@ -102,7 +121,7 @@ fn drawer<'a>(
                 let offset_x = window_size.width - width - PADDING * width / MAX_WIDTH;
                 Offset::new(
                     container(
-                        container(drawer_header())
+                        container(drawer_content(count))
                             .style(move |theme: &Theme| iced::widget::container::Style {
                                 background: Some(
                                     theme.extended_palette().background.base.color.into(),
@@ -123,8 +142,8 @@ fn drawer<'a>(
                 .offset(Point::new(offset_x, 0.0))
                 .into()
             })
-            .motion(motion)
-            .animates_layout(true),
+            .animates_layout(true)
+            .motion(motion),
         );
 
     container(drawer_stack)
@@ -133,23 +152,31 @@ fn drawer<'a>(
         .into()
 }
 
-// A helper function to create a demo drawer header
-fn drawer_header() -> Element<'static, Message> {
-    row![
-        horizontal_space(),
-        container(text("Drawer Title").size(18)).width(Length::Fill),
-        button(text("Close ›").shaping(text::Shaping::Advanced))
-            .on_press(Message::ToggleDrawer)
-            .style(|theme: &Theme, _status| {
-                iced::widget::button::Style {
-                    text_color: theme.extended_palette().primary.base.color,
-                    background: Some(Color::TRANSPARENT.into()),
-                    ..Default::default()
-                }
-            }),
+// A helper function to create a demo drawer content
+fn drawer_content(count: usize) -> Element<'static, Message> {
+    column![
+        row![
+            horizontal_space(),
+            container(text("Drawer Title").size(18)).width(Length::Fill),
+            button(text("Close ›").shaping(text::Shaping::Advanced))
+                .on_press(Message::ToggleDrawer)
+                .style(|theme: &Theme, _status| {
+                    iced::widget::button::Style {
+                        text_color: theme.extended_palette().primary.base.color,
+                        background: Some(Color::TRANSPARENT.into()),
+                        ..Default::default()
+                    }
+                }),
+        ]
+        .align_items(iced::Alignment::Center)
+        .spacing(8),
+        column![
+            button(text(format!("Increment count: {count}"))).on_press(Message::Increment),
+            text(LOREM_IPSUM)
+        ]
+        .spacing(8)
     ]
-    .align_items(iced::Alignment::Center)
-    .spacing(8)
+    .spacing(12)
     .into()
 }
 
@@ -159,6 +186,7 @@ pub fn main() -> iced::Result {
         .run()
 }
 
+/// A helper widget that offsets its content by a given amount.
 struct Offset<'a, Message, Theme, Renderer>
 where
     Message: 'a + Clone,
@@ -196,8 +224,7 @@ where
     Renderer: iced::advanced::Renderer,
 {
     fn size(&self) -> iced::Size<Length> {
-        // self.content.as_widget().size()
-        Size::new(Length::Fixed(350.0), Length::Fill)
+        self.content.as_widget().size()
     }
 
     fn children(&self) -> Vec<iced::advanced::widget::Tree> {
@@ -230,7 +257,6 @@ where
         self.content
             .as_widget()
             .layout(tree, renderer, limits)
-            // .translate(Vector::new(self.offset.x, self.offset.y))
             .translate(Vector::new(self.offset.x, self.offset.y))
     }
 
@@ -296,13 +322,6 @@ where
         cursor: iced::advanced::mouse::Cursor,
         viewport: &iced::Rectangle,
     ) {
-        // let new_viewport = Rectangle {
-        //     x: self.offset.x + viewport.x,
-        //     y: self.offset.y + viewport.y,
-        //     width: viewport.width,
-        //     height: viewport.height,
-        // };
-
         self.content
             .as_widget()
             .draw(tree, renderer, theme, style, layout, cursor, viewport);
