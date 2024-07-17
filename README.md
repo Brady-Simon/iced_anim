@@ -48,6 +48,18 @@ struct CustomRectangle {
 }
 ```
 
+You can also animate multiple values at once by providing a tuple up to a
+length of four:
+
+```rust
+AnimationBuilder::new((self.size, self.color), |(size, color)| {
+    container(text(size as isize).color(color))
+        .center(size)
+        .into()
+})
+.animates_layout(true)
+```
+
 ## Controlling the spring motion
 
 The spring motion of an `AnimationBuilder` can be customized. There are a few
@@ -72,3 +84,12 @@ AnimationBuilder::new(self.size, |size| {
 Refer to the `examples` directory for a variety of ways to use this crate.
 You can also run these examples locally with `cargo run --example <package>`,
 e.g. `cargo run --example animated_color`.
+
+## Limitations
+
+It might not be easy/possible to pass in non-clonable content like custom
+elements to `AnimationBuilder`'s closure to due the closure being having to be
+invoked multiple times to animate between values. Making reusable functions
+that use this widget and also take a generic element might be difficult. This
+particular problem might be better solved by a new widget in a future version
+that keeps the animated value in the app state rather than within the widget.
