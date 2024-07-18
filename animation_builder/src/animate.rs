@@ -315,6 +315,61 @@ where
     }
 }
 
+impl<T1, T2, T3> Animate for (T1, T2, T3)
+where
+    T1: Animate,
+    T2: Animate,
+    T3: Animate,
+{
+    fn components() -> usize {
+        T1::components() + T2::components() + T3::components()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.0.update(components);
+        self.1.update(components);
+        self.2.update(components);
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.0.distance_to(&end.0),
+            self.1.distance_to(&end.1),
+            self.2.distance_to(&end.2),
+        ]
+        .concat()
+    }
+}
+
+impl<T1, T2, T3, T4> Animate for (T1, T2, T3, T4)
+where
+    T1: Animate,
+    T2: Animate,
+    T3: Animate,
+    T4: Animate,
+{
+    fn components() -> usize {
+        T1::components() + T2::components() + T3::components() + T4::components()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.0.update(components);
+        self.1.update(components);
+        self.2.update(components);
+        self.3.update(components);
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.0.distance_to(&end.0),
+            self.1.distance_to(&end.1),
+            self.2.distance_to(&end.2),
+            self.3.distance_to(&end.3),
+        ]
+        .concat()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
