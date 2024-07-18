@@ -13,6 +13,7 @@
 //! in your app state:
 //!
 //! ```rust
+//! #[derive(Default)]
 //! struct State {
 //!     size: f32,
 //! }
@@ -21,7 +22,7 @@
 //! Then in your view, you can use an `AnimationBuilder` to animate the size of a container:
 //!
 //! ```rust
-//! # use iced::{Element, Theme, Border, widget::{container, text}};
+//! # use iced::{Element, widget::{container, text}};
 //! # use iced_anim::AnimationBuilder;
 //! # struct State {
 //! #     size: f32,
@@ -32,15 +33,6 @@
 //! #     fn view(&self) -> Element<Message> {
 //! AnimationBuilder::new(self.size, |size| {
 //!     container(text(size as isize))
-//!         .style(move |theme: &Theme| container::Style {
-//!             border: Border {
-//!                 color: theme.extended_palette().secondary.strong.color,
-//!                 width: 1.0,
-//!                 radius: 6.0.into(),
-//!             },
-//!             background: Some(theme.extended_palette().secondary.weak.color.into()),
-//!             ..Default::default()
-//!         })
 //!         .center(size)
 //!         .into()
 //! })
@@ -81,7 +73,6 @@
 //! # impl MyType {
 //! #   fn view(&self) -> iced::Element<Message> {
 //! AnimationBuilder::new((self.size, self.color), |(size, color)| {
-//!     // Build your element using the animated values
 //!     container(text(size as isize).color(color))
 //!         .center(size)
 //!         .into()
@@ -89,10 +80,9 @@
 //! # .into()
 //! #   }
 //! # }
-
 //! ```
 //!
-//! # Iced versions
+//! # Supported Iced versions
 //!
 //! This crate currently targets the master version of Iced (0.13-dev as of this writing).
 //!
