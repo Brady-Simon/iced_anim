@@ -1,10 +1,14 @@
+//! Implicitly animate between value changes.
 use std::time::Instant;
 
-use iced::advanced::{
-    graphics::core::{event, Element},
-    layout,
-    widget::{tree, Tree},
-    Widget,
+use iced::{
+    advanced::{
+        graphics::core::event,
+        layout,
+        widget::{tree, Tree},
+        Widget,
+    },
+    Element,
 };
 
 use crate::{animate::Animate, Spring, SpringMotion};
@@ -20,7 +24,7 @@ where
     T: 'static + Animate,
 {
     /// The function that builds the element using the animated value.
-    builder: Box<dyn Fn(T) -> iced::Element<'a, Message, Theme, Renderer> + 'a>,
+    builder: Box<dyn Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a>,
     /// The spring that animates the value of this widget.
     spring: Spring<T>,
     /// The last instant at which this widget animation was updated.
@@ -28,16 +32,17 @@ where
     /// Whether the layout will be affected by the animated value.
     animates_layout: bool,
     /// The cached element built using the most recent animated value and `builder`.
-    cached_element: iced::Element<'a, Message, Theme, Renderer>,
+    cached_element: Element<'a, Message, Theme, Renderer>,
 }
 
 impl<'a, T, Message, Theme, Renderer> AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate + Clone + PartialEq,
 {
+    /// Creates a new `AnimationBuilder` with the given value and builder function.
     pub fn new(
         value: T,
-        builder: impl Fn(T) -> iced::Element<'a, Message, Theme, Renderer> + 'a,
+        builder: impl Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a,
     ) -> Self {
         let element = (builder)(value.clone());
         Self {
@@ -49,6 +54,7 @@ where
         }
     }
 
+    /// Defines the way the spring will animate the value.
     pub fn motion(mut self, motion: SpringMotion) -> Self {
         self.spring = self.spring.with_motion(motion);
         self
@@ -261,7 +267,7 @@ where
 /// A helper function to create an `AnimationBuilder` with a given value and builder function.
 pub fn animation_builder<'a, T, Message, Theme, Renderer>(
     value: T,
-    builder: impl Fn(T) -> iced::Element<'a, Message, Theme, Renderer> + 'a,
+    builder: impl Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a,
 ) -> AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate + Clone + PartialEq,

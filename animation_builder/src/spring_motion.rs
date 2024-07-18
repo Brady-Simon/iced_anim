@@ -1,3 +1,4 @@
+//! Presets for spring animations that define the variables of a spring.
 use std::{fmt::Display, time::Duration};
 
 /// The motion associated with a spring animation.

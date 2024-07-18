@@ -1,3 +1,4 @@
+//! Spring physics to enable natural and interactive animations.
 use std::time::Duration;
 
 use crate::{Animate, SpringMotion};

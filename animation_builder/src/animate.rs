@@ -1,3 +1,9 @@
+//! Core definitions for the `Animate` trait and its implementations.
+//!
+//! The `Animate` trait is the main building block for animations. It is primarily designed for
+//! Spring/velocity-based animations to make animations interruptible without any jarring effects.
+//!
+//! You can implement this trait for custom types using the "derive" feature.
 use std::sync::Arc;
 
 use iced::theme::palette;
