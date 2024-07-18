@@ -1,11 +1,11 @@
 [package]
 name = "iced_anim"
+description = "A library for creating animations in Iced"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/Brady-Simon/iced_anim"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+readme = "../README.md"
 
 [dependencies]
 iced.workspace = true

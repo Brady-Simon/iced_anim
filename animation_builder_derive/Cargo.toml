@@ -1,7 +1,11 @@
 [package]
 name = "iced_anim_derive"
+description = "A macro for enabling custom animation types with iced_anim"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/Brady-Simon/iced_anim"
+readme = "../README.md"
 
 [lib]
 proc-macro = true
