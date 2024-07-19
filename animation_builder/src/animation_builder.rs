@@ -209,15 +209,22 @@ where
         viewport: &iced::Rectangle,
     ) -> event::Status {
         let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event else {
-            return event::Status::Ignored;
-            // return status;
+            return self.cached_element.as_widget_mut().on_event(
+                &mut tree.children[0],
+                event.clone(),
+                layout,
+                cursor,
+                renderer,
+                clipboard,
+                shell,
+                viewport,
+            );
         };
 
         let spring = tree.state.downcast_mut::<Spring<T>>();
 
-        let has_energy = spring.has_energy();
         // Request a redraw if the spring has remaining energy
-        if has_energy {
+        if spring.has_energy() {
             println!(
                 "{} redrawing after {}ms",
                 std::any::type_name::<T>(),
@@ -235,7 +242,8 @@ where
             self.cached_element = (self.builder)(spring.value().clone());
         }
 
-        let status = if let event::Status::Captured = self.cached_element.as_widget_mut().on_event(
+        // Handle child events after animating the current spring value
+        self.cached_element.as_widget_mut().on_event(
             &mut tree.children[0],
             event.clone(),
             layout,
@@ -244,13 +252,7 @@ where
             clipboard,
             shell,
             viewport,
-        ) {
-            println!("Captured child event {:?}", event);
-            event::Status::Captured
-        } else {
-            event::Status::Ignored
-        };
-        status
+        )
     }
 }
 
