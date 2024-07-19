@@ -37,3 +37,7 @@ path = "preview_motion.rs"
 [[example]]
 name = "animated_drawer"
 path = "animated_drawer.rs"
+
+[[example]]
+name = "nested_animations"
+path = "nested_animations.rs"

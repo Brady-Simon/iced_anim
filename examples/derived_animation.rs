@@ -6,7 +6,7 @@ use iced_anim::Animate;
 use iced_anim::AnimationBuilder;
 
 /// A custom struct with all animatable properties that derives `Animate`
-#[derive(Animate, Clone, PartialEq)]
+#[derive(Animate, Clone, Debug, PartialEq)]
 struct CustomRect {
     width: f32,
     height: f32,
