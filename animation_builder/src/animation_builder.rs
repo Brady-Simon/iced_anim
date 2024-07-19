@@ -225,11 +225,6 @@ where
 
         // Request a redraw if the spring has remaining energy
         if spring.has_energy() {
-            println!(
-                "{} redrawing after {}ms",
-                std::any::type_name::<T>(),
-                now.duration_since(spring.last_update()).as_millis(),
-            );
             shell.request_redraw(iced::window::RedrawRequest::NextFrame);
             // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {
@@ -237,7 +232,6 @@ where
             }
 
             // Update the animation and request a redraw
-            println!("Redrawing {:?} at {:?}", std::any::type_name::<T>(), now);
             spring.update(now);
             self.cached_element = (self.builder)(spring.value().clone());
         }
