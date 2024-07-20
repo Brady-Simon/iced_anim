@@ -1,4 +1,6 @@
 //! Implicitly animate between value changes.
+use std::time::Instant;
+
 use iced::{
     advanced::{
         graphics::core::event,
@@ -33,7 +35,7 @@ where
 
 impl<'a, T, Message, Theme, Renderer> AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
-    T: 'static + Animate + Clone + PartialEq,
+    T: 'static + Animate,
 {
     /// Creates a new `AnimationBuilder` with the given value and builder function.
     pub fn new(
@@ -208,19 +210,22 @@ where
         shell: &mut iced::advanced::Shell<'_, Message>,
         viewport: &iced::Rectangle,
     ) -> event::Status {
-        let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event else {
-            return self.cached_element.as_widget_mut().on_event(
-                &mut tree.children[0],
-                event.clone(),
-                layout,
-                cursor,
-                renderer,
-                clipboard,
-                shell,
-                viewport,
-            );
-        };
+        let status = self.cached_element.as_widget_mut().on_event(
+            &mut tree.children[0],
+            event.clone(),
+            layout,
+            cursor,
+            renderer,
+            clipboard,
+            shell,
+            viewport,
+        );
 
+        let now = Instant::now();
+
+        // TODO: Figure out if there's a way to get `RedrawRequested` working.
+        // It causes animation lag on the `animated_bubble` example due to constant interruptions
+        // leading to a 0ms rebuild time instead of the usual ~8/16 ms for a single frame.
         let spring = tree.state.downcast_mut::<Spring<T>>();
 
         // Request a redraw if the spring has remaining energy
@@ -234,19 +239,22 @@ where
             // Update the animation and request a redraw
             spring.update(now);
             self.cached_element = (self.builder)(spring.value().clone());
+
+            // TODO: Figure out why uncommenting this fixes the `nested_animations` example
+            // but breaks the `preview_motion` example.
+            // return self.cached_element.as_widget_mut().on_event(
+            //     &mut tree.children[0],
+            //     event,
+            //     layout,
+            //     cursor,
+            //     renderer,
+            //     clipboard,
+            //     shell,
+            //     viewport,
+            // );
         }
 
-        // Handle child events after animating the current spring value
-        self.cached_element.as_widget_mut().on_event(
-            &mut tree.children[0],
-            event.clone(),
-            layout,
-            cursor,
-            renderer,
-            clipboard,
-            shell,
-            viewport,
-        )
+        status
     }
 }
 
@@ -256,7 +264,7 @@ pub fn animation_builder<'a, T, Message, Theme, Renderer>(
     builder: impl Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a,
 ) -> AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
-    T: 'static + Animate + Clone + PartialEq,
+    T: 'static + Animate,
 {
     AnimationBuilder::new(value, builder)
 }

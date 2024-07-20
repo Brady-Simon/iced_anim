@@ -1,3 +1,7 @@
+//! Note: this example doesn't yet fully work as expected. The core issue is needing to rebuild
+//! the `cached_element` in `AnimationBuilder::on_event`, but trying to propagate events to the
+//! updated widget causes a panic in the `preview_motion` example. This is related to the
+//! `push_maybe` calls in that example, although I haven't figured out a workaround yet.
 use iced::{
     widget::{button, column, container, row, text},
     Border, Color, Element, Length,
