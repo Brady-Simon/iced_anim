@@ -27,8 +27,6 @@ where
     builder: Box<dyn Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a>,
     /// The spring that animates the value of this widget.
     spring: Spring<T>,
-    /// The last instant at which this widget animation was updated.
-    last_update: Instant,
     /// Whether the layout will be affected by the animated value.
     animates_layout: bool,
     /// The cached element built using the most recent animated value and `builder`.
@@ -37,7 +35,7 @@ where
 
 impl<'a, T, Message, Theme, Renderer> AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
-    T: 'static + Animate + Clone + PartialEq,
+    T: 'static + Animate,
 {
     /// Creates a new `AnimationBuilder` with the given value and builder function.
     pub fn new(
@@ -49,7 +47,6 @@ where
             builder: Box::new(builder),
             cached_element: element,
             spring: Spring::new(value),
-            last_update: Instant::now(),
             animates_layout: false,
         }
     }
@@ -75,7 +72,7 @@ where
 impl<'a, T, Message, Theme, Renderer> From<AnimationBuilder<'a, T, Message, Theme, Renderer>>
     for Element<'a, Message, Theme, Renderer>
 where
-    T: 'static + Animate + Clone + PartialEq,
+    T: 'static + Animate,
     Message: Clone + 'a,
     Theme: 'a,
     Renderer: iced::advanced::Renderer + 'a,
@@ -88,7 +85,7 @@ where
 impl<'a, T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
     for AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
-    T: 'static + Animate + Clone + PartialEq,
+    T: 'static + Animate,
     Renderer: iced::advanced::Renderer,
 {
     fn size(&self) -> iced::Size<iced::Length> {
@@ -213,7 +210,7 @@ where
         shell: &mut iced::advanced::Shell<'_, Message>,
         viewport: &iced::Rectangle,
     ) -> event::Status {
-        if let event::Status::Captured = self.cached_element.as_widget_mut().on_event(
+        let status = self.cached_element.as_widget_mut().on_event(
             &mut tree.children[0],
             event.clone(),
             layout,
@@ -222,45 +219,42 @@ where
             clipboard,
             shell,
             viewport,
-        ) {
-            return event::Status::Captured;
-        }
+        );
 
+        let now = Instant::now();
+
+        // TODO: Figure out if there's a way to get `RedrawRequested` working.
+        // It causes animation lag on the `animated_bubble` example due to constant interruptions
+        // leading to a 0ms rebuild time instead of the usual ~8/16 ms for a single frame.
         let spring = tree.state.downcast_mut::<Spring<T>>();
 
-        let has_energy = spring.has_energy();
         // Request a redraw if the spring has remaining energy
-        if has_energy {
+        if spring.has_energy() {
             shell.request_redraw(iced::window::RedrawRequest::NextFrame);
             // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {
                 shell.invalidate_layout();
             }
 
-            // TODO: Figure out why using window::Event::RedrawRequested results in a laggy animation.
-
             // Update the animation and request a redraw
-            let now = Instant::now();
-            let dt = now.duration_since(self.last_update);
-            spring.update(dt);
+            spring.update(now);
             self.cached_element = (self.builder)(spring.value().clone());
-            self.last_update = now;
+
+            // TODO: Figure out why uncommenting this fixes the `nested_animations` example
+            // but breaks the `preview_motion` example.
+            // return self.cached_element.as_widget_mut().on_event(
+            //     &mut tree.children[0],
+            //     event,
+            //     layout,
+            //     cursor,
+            //     renderer,
+            //     clipboard,
+            //     shell,
+            //     viewport,
+            // );
         }
 
-        // if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
-        //     if !has_energy {
-        //         return event::Status::Ignored;
-        //     }
-
-        //     // Update the animation and request a redraw
-        //     let dt = now.duration_since(self.last_update);
-        //     println!("Updating {} ms", dt.as_millis());
-        //     spring.update(dt);
-        //     self.cached_element = (self.builder)(spring.value().clone());
-        //     self.last_update = now;
-        // }
-
-        event::Status::Ignored
+        status
     }
 }
 
@@ -270,7 +264,7 @@ pub fn animation_builder<'a, T, Message, Theme, Renderer>(
     builder: impl Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a,
 ) -> AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
-    T: 'static + Animate + Clone + PartialEq,
+    T: 'static + Animate,
 {
     AnimationBuilder::new(value, builder)
 }

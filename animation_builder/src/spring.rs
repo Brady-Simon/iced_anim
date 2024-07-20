@@ -1,5 +1,5 @@
 //! Spring physics to enable natural and interactive animations.
-use std::time::Duration;
+use std::{fmt::Debug, time::Instant};
 
 use crate::{Animate, SpringMotion};
 
@@ -20,9 +20,8 @@ pub struct Spring<T: Animate> {
     target: T,
     /// The type of motion that the spring will follow, which controls damping/stiffness.
     motion: SpringMotion,
-    /// The total amount of time this spring has been animating to the current target.
-    /// This is mostly useful for debugging.
-    total: Duration,
+    /// The last instant at which this spring's value was updated.
+    last_update: Instant,
     /// The current velocity components that make up this spring animation.
     velocity: Vec<f32>,
     /// The initial distance from the target when the animation was started or interrupted.
@@ -44,7 +43,7 @@ where
             value: value.clone(),
             target: value,
             motion,
-            total: Duration::ZERO,
+            last_update: Instant::now(),
             velocity: (0..T::components()).map(|_| 0.0).collect(),
             initial_distance: (0..T::components()).map(|_| 0.0).collect(),
         }
@@ -64,6 +63,7 @@ where
     /// Returns an updated spring with the given `target`.
     pub fn with_target(mut self, target: T) -> Self {
         self.initial_distance = self.value.distance_to(&target);
+        self.last_update = Instant::now();
         self.target = target;
         self
     }
@@ -89,15 +89,22 @@ where
         self.motion
     }
 
+    /// Returns the instant at which the spring was last updated.
+    pub fn last_update(&self) -> Instant {
+        self.last_update
+    }
+
     /// Updates the spring's value based on the elapsed time since the last update.
     /// The spring will automatically reach its target when the remaining time reaches zero.
     /// This function will do nothing if the spring has no energy.
-    pub fn update(&mut self, dt: Duration) {
+    pub fn update(&mut self, now: Instant) {
         // Don't attempt to update anything if the spring has no energy.
         if !self.has_energy() {
             return;
         }
-        self.total += dt;
+
+        let dt = now.duration_since(self.last_update);
+        self.last_update = now;
 
         // End the animation if the spring is near the target wiht low velocity.
         if self.is_near_end() {
@@ -134,7 +141,7 @@ where
     pub fn interrupt(&mut self, new_target: T) {
         self.target = new_target;
         self.initial_distance = self.value.distance_to(&self.target);
-        self.total = Duration::ZERO;
+        self.last_update = Instant::now();
     }
 
     /// A spring has energy if it has not yet reached its target or if it is still moving.
@@ -189,19 +196,28 @@ mod tests {
         assert!(spring.has_energy());
     }
 
-    /// Interrupting the spring should change the target.
     #[test]
-    fn interrupt_resets_duration_and_changes_target() {
-        let mut spring = Spring::new(0.0)
-            .with_target(1.0)
-            .with_motion(SpringMotion::Custom {
-                response: Duration::from_secs(1),
-                damping: 1.0,
-            });
+    fn update_changes_value_and_last_update_time() {
+        let mut spring = Spring::new(0.0).with_target(1.0);
+        let now = Instant::now();
+        spring.update(now);
 
-        spring.update(Duration::from_millis(500));
+        // Updating should move the spring's value closer to the target
+        // and update the last update time to the given instant.
+        assert!(spring.last_update() == now);
+        assert!(*spring.value() > 0.0);
+    }
+
+    #[test]
+    fn interrupt_changes_target_and_resets_last_update_time() {
+        let mut spring = Spring::new(0.0).with_target(1.0);
+
+        let now = Instant::now();
+        spring.update(now);
         spring.interrupt(5.0);
 
+        // The target should change as well as adjust the last update time.
         assert_eq!(spring.target, 5.0);
+        assert!(spring.last_update() > now);
     }
 }
