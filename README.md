@@ -93,3 +93,10 @@ invoked multiple times to animate between values. Making reusable functions
 that use this widget and also take a generic element might be difficult. This
 particular problem might be better solved by a new widget in a future version
 that keeps the animated value in the app state rather than within the widget.
+
+Nested animations also don't work completely as expected yet if both properties
+are actively being animated. One animation at a time will function correctly,
+but trying to adjust both at the same time leads to the inner property skipping
+to the final value. This is demonstrated in the `nested_animations` example.
+That being said, you can always pass a tuple to an animation builder if both
+properties are being used in the same view.
