@@ -27,7 +27,7 @@ impl State {
             &self.theme,
             container(
                 row![
-                    pick_list(Theme::ALL, Some(self.theme.value().clone()), |theme| {
+                    pick_list(Theme::ALL, Some(self.theme.target().clone()), |theme| {
                         Message::ChangeTheme(theme.into())
                     }),
                     palette_grid(self.theme.value().extended_palette()),
