@@ -94,13 +94,17 @@
 //! app state instead of within the `AnimationBuilder`.
 
 pub mod animate;
+pub mod animation;
 pub mod animation_builder;
 pub mod spring;
+pub mod spring_event;
 pub mod spring_motion;
 
 pub use animate::Animate;
+pub use animation::Animation;
 pub use animation_builder::*;
 pub use spring::Spring;
+pub use spring_event::SpringEvent;
 pub use spring_motion::SpringMotion;
 
 #[cfg(feature = "derive")]

@@ -1,7 +1,7 @@
 //! Spring physics to enable natural and interactive animations.
 use std::{fmt::Debug, time::Instant};
 
-use crate::{Animate, SpringMotion};
+use crate::{spring_event::SpringEvent, Animate, SpringMotion};
 
 /// The minimum percent at which a spring is considered near its target.
 ///
@@ -62,9 +62,7 @@ where
 
     /// Returns an updated spring with the given `target`.
     pub fn with_target(mut self, target: T) -> Self {
-        self.initial_distance = self.value.distance_to(&target);
-        self.last_update = Instant::now();
-        self.target = target;
+        self.interrupt(target);
         self
     }
 
@@ -94,10 +92,31 @@ where
         self.last_update
     }
 
+    /// Updates the spring based on the given `event`.
+    ///
+    /// You can update either the current value by passing `SpringEvent::Tick`
+    /// or change the target value by passing `SpringEvent::Target`.
+    ///
+    /// ```rust
+    /// # use iced_anim::{Spring, SpringEvent};
+    /// let mut spring = Spring::new(0.0);
+    /// spring.update(SpringEvent::Target(5.0));
+    /// assert_eq!(spring.target(), &5.0);
+    ///
+    /// spring.update(SpringEvent::Tick(std::time::Instant::now()));
+    /// assert!(*spring.value() > 0.0);
+    /// ```
+    pub fn update(&mut self, event: SpringEvent<T>) {
+        match event {
+            SpringEvent::Tick(now) => self.tick(now),
+            SpringEvent::Target(target) => self.interrupt(target),
+        }
+    }
+
     /// Updates the spring's value based on the elapsed time since the last update.
     /// The spring will automatically reach its target when the remaining time reaches zero.
     /// This function will do nothing if the spring has no energy.
-    pub fn update(&mut self, now: Instant) {
+    pub fn tick(&mut self, now: Instant) {
         // Don't attempt to update anything if the spring has no energy.
         if !self.has_energy() {
             return;
@@ -171,6 +190,15 @@ where
     }
 }
 
+impl<T> Default for Spring<T>
+where
+    T: Animate + Default,
+{
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -197,10 +225,10 @@ mod tests {
     }
 
     #[test]
-    fn update_changes_value_and_last_update_time() {
+    fn tick_changes_value_and_last_update_time() {
         let mut spring = Spring::new(0.0).with_target(1.0);
         let now = Instant::now();
-        spring.update(now);
+        spring.tick(now);
 
         // Updating should move the spring's value closer to the target
         // and update the last update time to the given instant.
@@ -213,11 +241,18 @@ mod tests {
         let mut spring = Spring::new(0.0).with_target(1.0);
 
         let now = Instant::now();
-        spring.update(now);
+        spring.tick(now);
         spring.interrupt(5.0);
 
         // The target should change as well as adjust the last update time.
         assert_eq!(spring.target, 5.0);
         assert!(spring.last_update() > now);
+    }
+
+    /// Springs should implement `Default` if `T` does.
+    #[test]
+    fn default_impl() {
+        let spring = Spring::<f32>::default();
+        assert_eq!(spring.value(), &f32::default());
     }
 }

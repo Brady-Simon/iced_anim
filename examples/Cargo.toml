@@ -41,3 +41,7 @@ path = "animated_drawer.rs"
 [[example]]
 name = "nested_animations"
 path = "nested_animations.rs"
+
+[[example]]
+name = "stateful_animation"
+path = "stateful_animation.rs"

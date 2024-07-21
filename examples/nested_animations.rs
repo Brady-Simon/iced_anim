@@ -6,18 +6,18 @@ use iced::{
     widget::{button, column, container, row, text},
     Border, Color, Element, Length,
 };
-use iced_anim::animation_builder::AnimationBuilder;
+use iced_anim::{Animation, Spring, SpringEvent};
 
 #[derive(Debug, Clone)]
 enum Message {
     AdjustAll,
-    AdjustSize,
-    AdjustColor,
+    AdjustSize(SpringEvent<f32>),
+    AdjustColor(SpringEvent<Color>),
 }
 
 struct State {
-    size: f32,
-    color: Color,
+    size: Spring<f32>,
+    color: Spring<Color>,
 }
 
 const CYAN: Color = Color::from_rgb(0.0, 0.8, 0.8);
@@ -26,8 +26,8 @@ const MAGENTA: Color = Color::from_rgb(1.0, 0.0, 1.0);
 impl Default for State {
     fn default() -> Self {
         Self {
-            size: 50.0,
-            color: CYAN,
+            size: Spring::new(50.0),
+            color: Spring::new(CYAN),
         }
     }
 }
@@ -36,41 +36,69 @@ impl State {
     fn update(&mut self, message: Message) {
         match message {
             Message::AdjustAll => {
-                self.size = if self.size == 50.0 { 150.0 } else { 50.0 };
-                self.color = if self.color == CYAN { MAGENTA } else { CYAN };
+                self.size.update(
+                    if *self.size.value() == 50.0 {
+                        150.0
+                    } else {
+                        50.0
+                    }
+                    .into(),
+                );
+                self.color.update(
+                    if *self.color.value() == CYAN {
+                        MAGENTA
+                    } else {
+                        CYAN
+                    }
+                    .into(),
+                )
             }
-            Message::AdjustSize => self.size = if self.size == 50.0 { 150.0 } else { 50.0 },
-            Message::AdjustColor => self.color = if self.color == CYAN { MAGENTA } else { CYAN },
+            Message::AdjustSize(event) => self.size.update(event),
+            Message::AdjustColor(event) => self.color.update(event),
         }
     }
 
     fn view(&self) -> Element<Message> {
         let buttons = row![
-            button(text("Adjust size")).on_press(Message::AdjustSize),
-            button(text("Adjust color")).on_press(Message::AdjustColor),
+            button(text("Adjust size")).on_press(Message::AdjustSize(
+                if *self.size.value() == 50.0 {
+                    150.0
+                } else {
+                    50.0
+                }
+                .into()
+            )),
+            button(text("Adjust color")).on_press(Message::AdjustColor(
+                if *self.color.value() == CYAN {
+                    MAGENTA
+                } else {
+                    CYAN
+                }
+                .into()
+            )),
             button(text("Adjust all")).on_press(Message::AdjustAll),
         ]
         .spacing(8);
 
-        let animated_box = AnimationBuilder::new(self.size, |size| {
-            AnimationBuilder::new(self.color, move |color| {
-                container(text(size as isize))
+        let animated_box = Animation::new(
+            &self.size,
+            Animation::new(
+                &self.color,
+                container(text((*self.size.value() as isize).to_string()))
                     .style(move |_: &iced::Theme| container::Style {
                         border: Border {
-                            color,
+                            color: *self.color.value(),
                             width: 1.0,
                             radius: 6.0.into(),
                         },
-                        background: Some(color.into()),
+                        background: Some((*self.color.value()).into()),
                         ..Default::default()
                     })
-                    .center(size)
-                    .into()
-            })
-            .animates_layout(true)
-            .into()
-        })
-        .animates_layout(true);
+                    .center(*self.size.value()),
+            )
+            .on_update(Message::AdjustColor),
+        )
+        .on_update(Message::AdjustSize);
 
         column![buttons, animated_box]
             .spacing(8)
