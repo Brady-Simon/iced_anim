@@ -237,7 +237,7 @@ where
             }
 
             // Update the animation and request a redraw
-            spring.update(now);
+            spring.tick(now);
             self.cached_element = (self.builder)(spring.value().clone());
 
             // TODO: Figure out why uncommenting this fixes the `nested_animations` example

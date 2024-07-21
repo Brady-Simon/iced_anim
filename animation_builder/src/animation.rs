@@ -10,7 +10,7 @@
 //! # Example
 //! ```rust
 //! use iced::widget::{button, text, Row};
-//! use iced_anim::{Spring, Animation};
+//! use iced_anim::{Animation, Spring, SpringEvent};
 //!
 //! #[derive(Default)]
 //! struct State {
@@ -19,15 +19,13 @@
 //!
 //! #[derive(Clone)]
 //! enum Message {
-//!     UpdateSize(std::time::Instant),
-//!     TargetSize(f32),
+//!     UpdateSize(SpringEvent<f32>),
 //! }
 //!
 //! impl State {
 //!     fn update(&mut self, message: Message) {
 //!         match message {
-//!             Message::UpdateSize(now) => self.size.update(now),
-//!             Message::TargetSize(size) => self.size.set_target(size),
+//!             Message::UpdateSize(event) => self.size.update(event),
 //!         }
 //!     }
 //!
@@ -35,7 +33,7 @@
 //!         Row::new()
 //!             .push(
 //!                 button(text("Change target"))
-//!                     .on_press(Message::TargetSize(self.size.value() + 50.0))
+//!                     .on_press(Message::UpdateSize((self.size.value() + 50.0).into()))
 //!             )
 //!             .push(
 //!                 Animation::new(&self.size, text(self.size.value().to_string()))
@@ -52,7 +50,7 @@ use iced::{
     Element,
 };
 
-use crate::{Animate, Spring};
+use crate::{Animate, Spring, SpringEvent};
 
 /// A widget that helps you animate a value over time from your state.
 /// This is useful for animating changes to a widget's appearance or layout
@@ -64,7 +62,7 @@ pub struct Animation<'a, T: Animate, Message, Theme, Renderer> {
     /// The content that will respond to the animation.
     content: Element<'a, Message, Theme, Renderer>,
     /// The function that will be called when the spring needs to be updated.
-    on_update: Option<Box<dyn Fn(Instant) -> Message>>,
+    on_update: Option<Box<dyn Fn(SpringEvent<T>) -> Message>>,
 }
 
 impl<'a, T, Message, Theme, Renderer> Animation<'a, T, Message, Theme, Renderer>
@@ -87,7 +85,7 @@ where
     /// Sets the function that will be called when the spring needs to be updated.
     pub fn on_update<F>(mut self, build_message: F) -> Self
     where
-        F: Fn(Instant) -> Message + 'static,
+        F: Fn(SpringEvent<T>) -> Message + 'static,
     {
         self.on_update = Some(Box::new(build_message));
         self
@@ -220,7 +218,7 @@ where
 
         if let Some(on_update) = &self.on_update {
             let now = Instant::now();
-            shell.publish(on_update(now));
+            shell.publish(on_update(SpringEvent::Tick(now)));
         }
 
         status

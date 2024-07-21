@@ -2,18 +2,17 @@
 //! the `AnimationBuilder` widget. Stateful animations store the animation
 //! within the app state whereas the `AnimationBuilder` widget stores the
 //! animation within the widget tree.
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use iced::{
     widget::{container, mouse_area, Space},
     Border, Color, Element, Length, Point, Size, Subscription, Theme,
 };
-use iced_anim::{Animation, Spring, SpringMotion};
+use iced_anim::{Animation, Spring, SpringEvent, SpringMotion};
 
 #[derive(Debug, Clone)]
 enum Message {
-    UpdatePosition(Instant),
-    Target(Point),
+    UpdatePosition(SpringEvent<Point>),
     Resized(u32, u32),
 }
 
@@ -39,8 +38,7 @@ impl Default for State {
 impl State {
     fn update(&mut self, message: Message) {
         match message {
-            Message::Target(position) => self.position.set_target(position),
-            Message::UpdatePosition(now) => self.position.update(now),
+            Message::UpdatePosition(event) => self.position.update(event),
             Message::Resized(width, height) => self.size = Size::new(width, height),
         }
     }
@@ -75,7 +73,7 @@ impl State {
                 )
                 .on_update(Message::UpdatePosition),
             )
-            .on_move(Message::Target),
+            .on_move(|point| Message::UpdatePosition(point.into())),
         )
         .fill()
         .into()

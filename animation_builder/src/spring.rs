@@ -1,7 +1,7 @@
 //! Spring physics to enable natural and interactive animations.
 use std::{fmt::Debug, time::Instant};
 
-use crate::{Animate, SpringMotion};
+use crate::{spring_event::SpringEvent, Animate, SpringMotion};
 
 /// The minimum percent at which a spring is considered near its target.
 ///
@@ -54,14 +54,6 @@ where
         self.motion = motion;
     }
 
-    /// Updates the spring's `target` to the given value, resetting the initial distance
-    /// and last update time.
-    pub fn set_target(&mut self, target: T) {
-        self.initial_distance = self.value.distance_to(&target);
-        self.last_update = Instant::now();
-        self.target = target;
-    }
-
     /// Returns an updated spring with the given `motion`.
     pub fn with_motion(mut self, motion: SpringMotion) -> Self {
         self.motion = motion;
@@ -70,7 +62,7 @@ where
 
     /// Returns an updated spring with the given `target`.
     pub fn with_target(mut self, target: T) -> Self {
-        self.set_target(target);
+        self.interrupt(target);
         self
     }
 
@@ -100,10 +92,18 @@ where
         self.last_update
     }
 
+    /// Updates the spring based on the given `event`.
+    pub fn update(&mut self, event: SpringEvent<T>) {
+        match event {
+            SpringEvent::Tick(now) => self.tick(now),
+            SpringEvent::Target(target) => self.interrupt(target),
+        }
+    }
+
     /// Updates the spring's value based on the elapsed time since the last update.
     /// The spring will automatically reach its target when the remaining time reaches zero.
     /// This function will do nothing if the spring has no energy.
-    pub fn update(&mut self, now: Instant) {
+    pub fn tick(&mut self, now: Instant) {
         // Don't attempt to update anything if the spring has no energy.
         if !self.has_energy() {
             return;
@@ -212,10 +212,10 @@ mod tests {
     }
 
     #[test]
-    fn update_changes_value_and_last_update_time() {
+    fn tick_changes_value_and_last_update_time() {
         let mut spring = Spring::new(0.0).with_target(1.0);
         let now = Instant::now();
-        spring.update(now);
+        spring.tick(now);
 
         // Updating should move the spring's value closer to the target
         // and update the last update time to the given instant.
@@ -228,7 +228,7 @@ mod tests {
         let mut spring = Spring::new(0.0).with_target(1.0);
 
         let now = Instant::now();
-        spring.update(now);
+        spring.tick(now);
         spring.interrupt(5.0);
 
         // The target should change as well as adjust the last update time.
