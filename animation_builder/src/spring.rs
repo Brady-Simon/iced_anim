@@ -93,6 +93,19 @@ where
     }
 
     /// Updates the spring based on the given `event`.
+    ///
+    /// You can update either the current value by passing `SpringEvent::Tick`
+    /// or change the target value by passing `SpringEvent::Target`.
+    ///
+    /// ```rust
+    /// # use iced_anim::{Spring, SpringEvent};
+    /// let mut spring = Spring::new(0.0);
+    /// spring.update(SpringEvent::Target(5.0));
+    /// assert_eq!(spring.target(), &5.0);
+    ///
+    /// spring.update(SpringEvent::Tick(std::time::Instant::now()));
+    /// assert!(*spring.value() > 0.0);
+    /// ```
     pub fn update(&mut self, event: SpringEvent<T>) {
         match event {
             SpringEvent::Tick(now) => self.tick(now),

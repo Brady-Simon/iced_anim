@@ -8,6 +8,18 @@
 //! You can also use the `From` impl to create a `SpringEvent::Target` from a
 //! value, e.g. `Message::ChangeSize(5.0.into())` instead of
 //! `Message::ChangeSize(SpringEvent::Target(5.0))`.
+//!
+//! ```rust
+//! # use iced_anim::{Spring, SpringEvent};
+//! let mut spring_1 = Spring::new(0.0);
+//! spring_1.update(SpringEvent::Target(5.0));
+//!
+//! let mut spring_2 = Spring::new(0.0);
+//! spring_2.update(5.0.into());
+//!
+//! assert_eq!(spring_1.target(), &5.0);
+//! assert_eq!(spring_2.target(), &5.0);
+//! ```
 use std::time::Instant;
 
 use crate::Animate;
