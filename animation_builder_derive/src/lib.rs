@@ -54,18 +54,17 @@ pub fn animate_derive(input: TokenStream) -> TokenStream {
                 total
             }
 
-            fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+            fn update(&mut self, components: &mut impl Iterator<Item = ::core::primitive::f32>) {
                 #(#update_fields)*
             }
 
-            fn distance_to(&self, end: &Self) -> Vec<f32> {
-                let mut distances = Vec::with_capacity(Self::components());
+            fn distance_to(&self, end: &Self) -> ::std::vec::Vec<::core::primitive::f32> {
+                let mut distances = ::std::vec::Vec::with_capacity(Self::components());
                 #(#distance_fields)*
                 distances.concat()
             }
         }
     };
 
-    // Convert the generated implementation into a TokenStream and return it
     TokenStream::from(impl_gen)
 }
