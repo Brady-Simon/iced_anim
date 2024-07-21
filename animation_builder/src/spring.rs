@@ -158,9 +158,14 @@ where
 
     /// Interrupts the existing animation and starts a new one with the `new_target`.
     pub fn interrupt(&mut self, new_target: T) {
+        // Reset the last update if the spring doesn't have any energy.
+        // This avoids resetting the last update during continuously interrupted animations.
+        if !self.has_energy() {
+            self.last_update = Instant::now();
+        }
+
         self.target = new_target;
         self.initial_distance = self.value.distance_to(&self.target);
-        self.last_update = Instant::now();
     }
 
     /// A spring has energy if it has not yet reached its target or if it is still moving.
@@ -246,7 +251,32 @@ mod tests {
 
         // The target should change as well as adjust the last update time.
         assert_eq!(spring.target, 5.0);
-        assert!(spring.last_update() > now);
+    }
+
+    /// An spring at rest should have its last update reset when interrupted.
+    #[test]
+    fn interrupt_resets_last_update_when_at_rest() {
+        let start_time = Instant::now();
+        let mut spring = Spring::new(0.0);
+        spring.interrupt(5.0);
+
+        // The last update time should be reset if the spring has no energy.
+        assert!(spring.last_update > start_time);
+    }
+
+    /// A spring with energy shouldn't have its last update reset when interrupted.
+    /// This is to avoid resetting the last update during continuously interrupted animations,
+    /// which can cause the Diff -> Event loop to have 0ms duration between updates when the real
+    /// duration between renders is much longer.
+    #[test]
+    fn interrupt_does_not_reset_last_update_with_energy() {
+        let mut spring = Spring::new(0.0).with_target(10.0).with_velocity(vec![1.0]);
+        let update_time = Instant::now();
+        spring.update(SpringEvent::Tick(update_time));
+        spring.interrupt(5.0);
+
+        // The last update time should not be reset if the spring has energy.
+        assert_eq!(spring.last_update, update_time);
     }
 
     /// Springs should implement `Default` if `T` does.
