@@ -5,12 +5,22 @@ This package is designed to make it easy to animate between values using
 
 ## Overview
 
-The main exposed widget is `AnimationBuilder`, which takes some sort of value
-that implements `Animate` and a closure to build out a UI based on the current
-interpolated value. The animations are driven via spring physics instead of
-easing functions to allow for more natural and interruptible animations.
-Typical usage might look something like this, where `self.size` is an `f32` in
-your app state:
+There are two main widgets exposed: `AnimationBuilder` and `Animation`. Both
+work off the core `Animate` trait defining how a value is animated, but differ
+on where the animated state is kept. The `AnimationBuilder` stores the animated
+value within the widget itself while the `Animation` widget takes the animated
+value from props and allows you to emit a message to update the value.
+
+Both widgets animate values using spring physics instead of easing functions to
+allow for more natural and interruptible animations.
+
+### `AnimationBuilder` widget
+
+The `AnimationBuilder` widget takes some sort of value that implements 
+`Animate` and a closure to build out a UI based on the current interpolated
+value. The benefit is that you don't have to emit messages for very simple 
+animations but has a couple limitations mentioned below. Typical usage might
+look something like this, where `self.size` is an `f32` in your app state:
 
 ```rust
 AnimationBuilder::new(self.size, |size| {
@@ -29,6 +39,61 @@ The UI will automatically re-render when `self.size` is changed. The closure
 provides the current animated value and will be called to generate the next
 view as appropriate. To see more for this particular example, refer to the
 `animated_size` example.
+
+### `Animation` widget
+
+The `Animation` widget works by taking a `Spring<T>` value and some element,
+then emitting a message when the value needs to change. Your app state and 
+message would look something like this:
+
+```rust
+use iced_anim::{Spring, Animation};
+
+#[derive(Default)]
+struct State {
+    size: Spring<f32>,
+}
+
+#[derive(Clone)]
+enum Message {
+    UpdateSize(std::time::Instant),
+    TargetSize(f32),
+}
+```
+
+Then, somewhere in your view, have a way to change the spring's target and
+update the animated value:
+
+```rust
+use iced::widget::{Column, button, text};
+
+Column::new()
+    .push(
+        button(text("+50"))
+            .on_press(Message::TargetSize(self.size.value() + 50.0))
+    )
+    .push(
+        Animation::new(self.size, text(self.size.value().to_string()))
+            .on_update(Message::UpdateSize)
+    )
+```
+
+Finally, your update function will call `self.size.set_target` to indicate the
+spring should animate towards a new target, and `self.size.update` to animate
+towards the new value.
+
+```rust
+impl State {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::UpdateSize(now) => self.size.update(now),
+            Message::TargetSize(new_size) => self.size.set_target(new_size),
+        }
+    }
+}
+```
+
+See the `stateful_animation` example for a complete example.
 
 ## Types that implement `Animate`
 

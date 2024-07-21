@@ -54,6 +54,14 @@ where
         self.motion = motion;
     }
 
+    /// Updates the spring's `target` to the given value, resetting the initial distance
+    /// and last update time.
+    pub fn set_target(&mut self, target: T) {
+        self.initial_distance = self.value.distance_to(&target);
+        self.last_update = Instant::now();
+        self.target = target;
+    }
+
     /// Returns an updated spring with the given `motion`.
     pub fn with_motion(mut self, motion: SpringMotion) -> Self {
         self.motion = motion;
@@ -62,9 +70,7 @@ where
 
     /// Returns an updated spring with the given `target`.
     pub fn with_target(mut self, target: T) -> Self {
-        self.initial_distance = self.value.distance_to(&target);
-        self.last_update = Instant::now();
-        self.target = target;
+        self.set_target(target);
         self
     }
 
@@ -171,6 +177,15 @@ where
     }
 }
 
+impl<T> Default for Spring<T>
+where
+    T: Animate + Default,
+{
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -219,5 +234,12 @@ mod tests {
         // The target should change as well as adjust the last update time.
         assert_eq!(spring.target, 5.0);
         assert!(spring.last_update() > now);
+    }
+
+    /// Springs should implement `Default` if `T` does.
+    #[test]
+    fn default_impl() {
+        let spring = Spring::<f32>::default();
+        assert_eq!(spring.value(), &f32::default());
     }
 }
