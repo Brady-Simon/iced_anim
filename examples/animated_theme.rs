@@ -1,51 +1,48 @@
 use iced::{
     theme::palette::{Extended, Pair},
-    widget::{column, container, pick_list, row, text, themer, tooltip, Row, Space},
+    widget::{column, container, pick_list, row, text, tooltip, Row, Space},
     Border, Element, Length, Theme,
 };
-use iced_anim::AnimationBuilder;
+use iced_anim::{Animation, Spring, SpringEvent};
 
 #[derive(Debug, Clone)]
 enum Message {
-    ChangeTheme(Theme),
+    ChangeTheme(SpringEvent<Theme>),
 }
 
 #[derive(Default)]
 struct State {
-    theme: Theme,
+    theme: Spring<Theme>,
 }
-
 
 impl State {
     fn update(&mut self, message: Message) {
         match message {
-            Message::ChangeTheme(theme) => {
-                self.theme = theme;
-            }
+            Message::ChangeTheme(event) => self.theme.update(event),
         }
     }
 
     fn view(&self) -> Element<Message> {
-        AnimationBuilder::new(self.theme.clone(), move |theme| {
-            themer(
-                theme.clone(),
-                container(
-                    row![
-                        pick_list(Theme::ALL, Some(self.theme.clone()), Message::ChangeTheme),
-                        palette_grid(theme.extended_palette()),
-                    ]
-                    .spacing(8),
-                )
-                .padding(8)
-                .style(move |theme: &Theme| container::Style {
-                    background: Some(theme.palette().background.into()),
-                    ..Default::default()
-                })
-                .width(Length::Fill)
-                .height(Length::Fill),
+        Animation::new(
+            &self.theme,
+            container(
+                row![
+                    pick_list(Theme::ALL, Some(self.theme.value().clone()), |theme| {
+                        Message::ChangeTheme(theme.into())
+                    }),
+                    palette_grid(self.theme.value().extended_palette()),
+                ]
+                .spacing(8),
             )
-            .into()
-        })
+            .padding(8)
+            .style(move |theme: &Theme| container::Style {
+                background: Some(theme.palette().background.into()),
+                ..Default::default()
+            })
+            .width(Length::Fill)
+            .height(Length::Fill),
+        )
+        .on_update(Message::ChangeTheme)
         .into()
     }
 }
@@ -136,6 +133,6 @@ fn pair_square<'a>(name: String, pair: Pair) -> Element<'a, Message> {
 
 pub fn main() -> iced::Result {
     iced::application("Animated theme", State::update, State::view)
-        .theme(|state| state.theme.clone())
+        .theme(|state| state.theme.value().clone())
         .run()
 }
