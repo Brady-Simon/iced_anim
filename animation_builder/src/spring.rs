@@ -105,11 +105,15 @@ where
     ///
     /// spring.update(SpringEvent::Tick(std::time::Instant::now()));
     /// assert!(*spring.value() > 0.0);
+    ///
+    /// spring.update(SpringEvent::Settle);
+    /// assert_eq!(spring.value(), spring.target());
     /// ```
     pub fn update(&mut self, event: SpringEvent<T>) {
         match event {
             SpringEvent::Tick(now) => self.tick(now),
             SpringEvent::Target(target) => self.interrupt(target),
+            SpringEvent::Settle => self.settle(),
         }
     }
 
@@ -166,6 +170,13 @@ where
 
         self.target = new_target;
         self.initial_distance = self.value.distance_to(&self.target);
+    }
+
+    /// Causes the spring to settle immediately at the target value,
+    /// ending any ongoing animation and setting the velocity to zero.
+    pub fn settle(&mut self) {
+        self.value = self.target.clone();
+        self.velocity = (0..T::components()).map(|_| 0.0).collect();
     }
 
     /// A spring has energy if it has not yet reached its target or if it is still moving.
@@ -277,6 +288,22 @@ mod tests {
 
         // The last update time should not be reset if the spring has energy.
         assert_eq!(spring.last_update, update_time);
+    }
+
+    /// Calling `.settle()` should jump the spring's value to the target value.
+    #[test]
+    fn settle_sets_value_to_target() {
+        let mut spring = Spring::new(0.0).with_target(5.0);
+        spring.settle();
+        assert_eq!(spring.value(), spring.target());
+    }
+
+    /// Calling `.settle()` should bring all velocity components to zero.
+    #[test]
+    fn settle_resets_velocity() {
+        let mut spring = Spring::new(0.0).with_target(5.0).with_velocity(vec![1.0]);
+        spring.settle();
+        assert_eq!(spring.velocity, vec![0.0]);
     }
 
     /// Springs should implement `Default` if `T` does.

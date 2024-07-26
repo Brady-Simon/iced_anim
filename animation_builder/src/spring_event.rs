@@ -1,8 +1,9 @@
 //! An event associated with an animated `Spring` value.
 //!
-//! Spring events can represent two general types of events:
+//! Spring events can represent three general types of events:
 //! - A tick event that updates the spring's value
 //! - A target event that sets the spring's target value
+//! - A settle event that ends the animation early.
 //!
 //! This event can be passed to `Spring::update` to update the spring's value.
 //! You can also use the `From` impl to create a `SpringEvent::Target` from a
@@ -26,11 +27,13 @@ use crate::Animate;
 
 /// An event associated with an animated `Spring` value.
 ///
-/// This event represents one of two things:
+/// This event represents one of three things:
 /// - A tick event that updates the spring's value, e.g. a frame is rendered
 /// and the spring's value should be updated.
 /// - A target event that sets the spring's target value, e.g. a user presses
 /// a button and changes the target size of an animated value.
+/// - A settle event that ends the animation early by jumping to the target
+/// value.
 ///
 /// This event can be passed to `Spring::update` to update the spring's value.
 #[derive(Debug, Clone, PartialEq)]
@@ -41,6 +44,9 @@ pub enum SpringEvent<T> {
     /// A target event that sets the spring's target value, e.g. a user presses
     /// a button and changes the target size of an animated value.
     Target(T),
+    /// Causes the spring to settle to its target value immediately. This is
+    /// useful when the user has indicated they want reduced motion.
+    Settle,
 }
 
 // Impl `Copy` for `SpringEvent` when `T` is `Copy`.

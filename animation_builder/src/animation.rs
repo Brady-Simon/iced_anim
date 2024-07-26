@@ -63,6 +63,9 @@ pub struct Animation<'a, T: Animate, Message, Theme, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
     /// The function that will be called when the spring needs to be updated.
     on_update: Option<Box<dyn Fn(SpringEvent<T>) -> Message>>,
+    /// Whether animations are disabled, in which case the value will be updated
+    /// immediately without animating. Useful for reduced motion preferences.
+    is_disabled: bool,
 }
 
 impl<'a, T, Message, Theme, Renderer> Animation<'a, T, Message, Theme, Renderer>
@@ -79,6 +82,7 @@ where
             spring,
             content: content.into(),
             on_update: None,
+            is_disabled: false,
         }
     }
 
@@ -88,6 +92,13 @@ where
         F: Fn(SpringEvent<T>) -> Message + 'static,
     {
         self.on_update = Some(Box::new(build_message));
+        self
+    }
+
+    /// Whether to disable animations and update the value immediately.
+    /// Useful for reduced motion preferences.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.is_disabled = disabled;
         self
     }
 }
@@ -217,8 +228,13 @@ where
         }
 
         if let Some(on_update) = &self.on_update {
-            let now = Instant::now();
-            shell.publish(on_update(SpringEvent::Tick(now)));
+            let event: SpringEvent<T> = if self.is_disabled {
+                SpringEvent::Settle
+            } else {
+                let now = Instant::now();
+                SpringEvent::Tick(now)
+            };
+            shell.publish(on_update(event));
         }
 
         status

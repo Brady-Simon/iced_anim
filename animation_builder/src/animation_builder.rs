@@ -27,6 +27,9 @@ where
     spring: Spring<T>,
     /// Whether the layout will be affected by the animated value.
     animates_layout: bool,
+    /// Whether animations are disabled, in which case the value will be updated
+    /// immediately without animating. Useful for reduced motion preferences.
+    is_disabled: bool,
     /// The cached element built using the most recent animated value and `builder`.
     cached_element: Element<'a, Message, Theme, Renderer>,
 }
@@ -46,6 +49,7 @@ where
             cached_element: element,
             spring: Spring::new(value),
             animates_layout: false,
+            is_disabled: false,
         }
     }
 
@@ -63,6 +67,13 @@ where
     /// layout of the widget (e.g. its size, text, position, etc).
     pub fn animates_layout(mut self, animates_layout: bool) -> Self {
         self.animates_layout = animates_layout;
+        self
+    }
+
+    /// Whether to disable animations and update the value immediately.
+    /// Useful for reduced motion preferences.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.is_disabled = disabled;
         self
     }
 }
@@ -100,13 +111,17 @@ where
 
     fn diff(&self, tree: &mut Tree) {
         // Update the spring's target if it has changed
-        let state = tree.state.downcast_mut::<Spring<T>>();
-        if state.target() != self.spring.value() {
-            state.interrupt(self.spring.target().clone());
+        let spring = tree.state.downcast_mut::<Spring<T>>();
+        if spring.target() != self.spring.value() {
+            if self.is_disabled {
+                spring.settle();
+            } else {
+                spring.interrupt(self.spring.target().clone());
+            }
         }
 
-        if state.motion() != self.spring.motion() {
-            state.set_motion(self.spring.motion())
+        if spring.motion() != self.spring.motion() {
+            spring.set_motion(self.spring.motion())
         }
 
         tree.diff_children(std::slice::from_ref(&self.cached_element));
