@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["animation_builder", "animation_builder_derive", "examples"]
+members = ["iced_anim", "iced_anim_derive", "examples"]
 
 [workspace.dependencies]
 iced = { git = "https://github.com/iced-rs/iced", rev = "be59ec0ffce20cf789b18499e37e3e3cb5505b5b", features = ["advanced"] }

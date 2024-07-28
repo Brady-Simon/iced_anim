@@ -13,7 +13,7 @@ pub const ESPILON: f32 = 0.005;
 /// A representation of a spring animation that interpolates between values.
 /// You typically won't need to use this directly, but it's used by the `AnimationBuilder`.
 #[derive(Debug, Clone, PartialEq)]
-pub struct Spring<T: Animate> {
+pub struct Spring<T> {
     /// The current value of the spring.
     value: T,
     /// The target value that the spring will animate towards.
@@ -30,42 +30,8 @@ pub struct Spring<T: Animate> {
     initial_distance: Vec<f32>,
 }
 
-impl<T> Spring<T>
-where
-    T: Animate,
-{
-    /// Creates a new `Spring` with the initial `value`.
-    ///
-    /// Use the builder methods to customize the spring's behavior and target.
-    pub fn new(value: T) -> Self {
-        let motion = SpringMotion::default();
-        Self {
-            value: value.clone(),
-            target: value,
-            motion,
-            last_update: Instant::now(),
-            velocity: (0..T::components()).map(|_| 0.0).collect(),
-            initial_distance: (0..T::components()).map(|_| 0.0).collect(),
-        }
-    }
-
-    /// Updates the spring's `motion` to the given value.
-    pub fn set_motion(&mut self, motion: SpringMotion) {
-        self.motion = motion;
-    }
-
-    /// Returns an updated spring with the given `motion`.
-    pub fn with_motion(mut self, motion: SpringMotion) -> Self {
-        self.motion = motion;
-        self
-    }
-
-    /// Returns an updated spring with the given `target`.
-    pub fn with_target(mut self, target: T) -> Self {
-        self.interrupt(target);
-        self
-    }
-
+// Impls that don't require an `Animate` bound.
+impl<T> Spring<T> {
     /// Returns an updated spring with the given `velocity`.
     pub fn with_velocity(mut self, velocity: Vec<f32>) -> Self {
         self.velocity = velocity;
@@ -90,6 +56,49 @@ where
     /// Returns the instant at which the spring was last updated.
     pub fn last_update(&self) -> Instant {
         self.last_update
+    }
+
+    /// Updates the spring's `motion` to the given value.
+    pub fn set_motion(&mut self, motion: SpringMotion) {
+        self.motion = motion;
+    }
+
+    /// Returns an updated spring with the given `motion`.
+    pub fn with_motion(mut self, motion: SpringMotion) -> Self {
+        self.motion = motion;
+        self
+    }
+}
+
+impl<T> Spring<T>
+where
+    T: Animate,
+{
+    /// Creates a new `Spring` with the initial `value`.
+    ///
+    /// Use the builder methods to customize the spring's behavior and target.
+    pub fn new(value: T) -> Self {
+        let motion = SpringMotion::default();
+        Self {
+            value: value.clone(),
+            target: value,
+            motion,
+            last_update: Instant::now(),
+            velocity: vec![0.0; T::components()],
+            initial_distance: vec![0.0; T::components()],
+        }
+    }
+
+    /// Returns an updated spring with the given `target`.
+    pub fn with_target(mut self, target: T) -> Self {
+        self.interrupt(target);
+        self
+    }
+
+    /// A spring has energy if it has not yet reached its target or if it is still moving.
+    /// This being `true` means the spring is at rest and doesn't need to be updated.
+    pub fn has_energy(&self) -> bool {
+        self.value != self.target || self.velocity.iter().any(|&v| v != 0.0)
     }
 
     /// Updates the spring based on the given `event`.
@@ -132,7 +141,7 @@ where
         // End the animation if the spring is near the target wiht low velocity.
         if self.is_near_end() {
             self.value = self.target.clone();
-            self.velocity = (0..T::components()).map(|_| 0.0).collect();
+            self.velocity = vec![0.0; T::components()];
             return;
         }
 
@@ -176,13 +185,7 @@ where
     /// ending any ongoing animation and setting the velocity to zero.
     pub fn settle(&mut self) {
         self.value = self.target.clone();
-        self.velocity = (0..T::components()).map(|_| 0.0).collect();
-    }
-
-    /// A spring has energy if it has not yet reached its target or if it is still moving.
-    /// This being `true` means the spring is at rest and doesn't need to be updated.
-    pub fn has_energy(&self) -> bool {
-        self.value != self.target || self.velocity.iter().any(|&v| v != 0.0)
+        self.velocity = vec![0.0; T::components()];
     }
 
     /// Whether the spring is near the end of its animation.

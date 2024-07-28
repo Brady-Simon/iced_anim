@@ -9,7 +9,7 @@ readme = "../README.md"
 
 [dependencies]
 iced.workspace = true
-iced_anim_derive = { version = "0.1.0", path = "../animation_builder_derive", optional = true }
+iced_anim_derive = { version = "0.1.0", path = "../iced_anim_derive", optional = true }
 
 [features]
 derive = ["iced_anim_derive"]
