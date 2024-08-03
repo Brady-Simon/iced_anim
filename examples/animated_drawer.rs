@@ -1,12 +1,14 @@
 use iced::{
     advanced::Widget,
     widget::{button, column, container, horizontal_space, row, text, Space, Stack},
-    Border, Color, Element, Length, Padding, Point, Rectangle, Size, Subscription, Theme, Vector,
+    Border, Color, Element,
+    Length::{self, Fill},
+    Padding, Point, Rectangle, Size, Subscription, Theme, Vector,
 };
 use iced_anim::animation_builder;
 
 /// Some placeholder text to show within the drawer.
-const LOREM_IPSUM: &'static str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus commodo blandit posuere. Sed pharetra, lacus at pellentesque gravida, purus sem consequat lectus, vel venenatis justo ex ut nibh. Duis quis risus vitae libero volutpat fringilla vitae et magna. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Cras a malesuada nisl, ac scelerisque mauris. Praesent justo turpis, molestie sed dapibus id, mollis nec erat. Nam eu efficitur eros. Nullam condimentum neque at massa varius, ut interdum est sollicitudin. Etiam sit amet libero purus. In enim ipsum, congue in nulla sit amet, condimentum venenatis augue.
+const LOREM_IPSUM: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus commodo blandit posuere. Sed pharetra, lacus at pellentesque gravida, purus sem consequat lectus, vel venenatis justo ex ut nibh. Duis quis risus vitae libero volutpat fringilla vitae et magna. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Cras a malesuada nisl, ac scelerisque mauris. Praesent justo turpis, molestie sed dapibus id, mollis nec erat. Nam eu efficitur eros. Nullam condimentum neque at massa varius, ut interdum est sollicitudin. Etiam sit amet libero purus. In enim ipsum, congue in nulla sit amet, condimentum venenatis augue.
 
 Sed bibendum lectus nec erat venenatis, eget suscipit sapien iaculis. Nunc in tellus id nisi maximus iaculis. Cras dignissim rutrum tristique. Integer molestie eros mi. Vestibulum consequat nulla mi, semper elementum lectus dictum eu. Pellentesque facilisis, dolor quis dictum luctus, lacus ipsum cursus nulla, vel laoreet ex enim eu turpis. Proin bibendum finibus tempus. Pellentesque dolor diam, ultricies quis interdum eget, posuere in magna. Curabitur vel congue est. In feugiat posuere dapibus. Morbi purus purus, blandit ut justo sit amet, convallis sagittis libero. Aliquam tempus nisi et nisi mattis, vitae vehicula massa facilisis.";
 
@@ -17,7 +19,7 @@ enum Message {
     /// Opens or closes the drawer.
     ToggleDrawer,
     /// Keeps track of the current window size.
-    WindowResized { width: u32, height: u32 },
+    WindowResized(Size),
 }
 
 struct State {
@@ -46,16 +48,14 @@ impl State {
             Message::ToggleDrawer => {
                 self.is_drawer_open = !self.is_drawer_open;
             }
-            Message::WindowResized { width, height } => {
-                self.window_size = Size::new(width as f32, height as f32);
-            }
+            Message::WindowResized(size) => self.window_size = size,
         }
     }
 
     fn subscription(&self) -> Subscription<Message> {
         iced::event::listen_with(|event, _, _| match event {
-            iced::Event::Window(iced::window::Event::Resized { width, height }) => {
-                Some(Message::WindowResized { width, height })
+            iced::Event::Window(iced::window::Event::Resized(size)) => {
+                Some(Message::WindowResized(size))
             }
             _ => None,
         })
@@ -109,7 +109,7 @@ fn drawer<'a>(
                             ..Default::default()
                         }),
                 )
-                .padding(Padding::from([0.0, width + PADDING, 0.0, 0.0]))
+                .padding(Padding::new(0.0).right(width + PADDING))
                 .into()
             })
             .motion(motion)
@@ -126,14 +126,14 @@ fn drawer<'a>(
                                 background: Some(
                                     theme.extended_palette().background.base.color.into(),
                                 ),
-                                border: Border::rounded(8),
+                                border: Border::default().rounded(8),
                                 ..Default::default()
                             })
                             .padding(8)
-                            .fill_y()
+                            .height(Fill)
                             .center_x(Length::Fixed(MAX_WIDTH)),
                     )
-                    .padding(Padding::from([PADDING, PADDING, PADDING, 0.0]))
+                    .padding(Padding::new(PADDING).left(0))
                     .style(move |_| iced::widget::container::Style {
                         background: Some(background.into()),
                         ..Default::default()
@@ -168,7 +168,7 @@ fn drawer_content(count: usize) -> Element<'static, Message> {
                     }
                 }),
         ]
-        .align_items(iced::Alignment::Center)
+        .align_y(iced::Alignment::Center)
         .spacing(8),
         column![
             button(text(format!("Increment count: {count}"))).on_press(Message::Increment),

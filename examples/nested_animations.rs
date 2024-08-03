@@ -11,8 +11,8 @@ use iced_anim::{Animation, Spring, SpringEvent};
 #[derive(Debug, Clone)]
 enum Message {
     AdjustAll,
-    AdjustSize(SpringEvent<f32>),
-    AdjustColor(SpringEvent<Color>),
+    ChangeSize(SpringEvent<f32>),
+    ChangeColor(SpringEvent<Color>),
 }
 
 struct State {
@@ -53,14 +53,14 @@ impl State {
                     .into(),
                 )
             }
-            Message::AdjustSize(event) => self.size.update(event),
-            Message::AdjustColor(event) => self.color.update(event),
+            Message::ChangeSize(event) => self.size.update(event),
+            Message::ChangeColor(event) => self.color.update(event),
         }
     }
 
     fn view(&self) -> Element<Message> {
         let buttons = row![
-            button(text("Adjust size")).on_press(Message::AdjustSize(
+            button(text("Adjust size")).on_press(Message::ChangeSize(
                 if *self.size.value() == 50.0 {
                     150.0
                 } else {
@@ -68,7 +68,7 @@ impl State {
                 }
                 .into()
             )),
-            button(text("Adjust color")).on_press(Message::AdjustColor(
+            button(text("Adjust color")).on_press(Message::ChangeColor(
                 if *self.color.value() == CYAN {
                     MAGENTA
                 } else {
@@ -96,9 +96,9 @@ impl State {
                     })
                     .center(*self.size.value()),
             )
-            .on_update(Message::AdjustColor),
+            .on_update(Message::ChangeColor),
         )
-        .on_update(Message::AdjustSize);
+        .on_update(Message::ChangeSize);
 
         column![buttons, animated_box]
             .spacing(8)

@@ -11,29 +11,29 @@ const BUBBLE_SIZE: f32 = 50.0;
 #[derive(Debug, Clone)]
 enum Message {
     MoveTo(Point),
-    Resized(u32, u32),
+    Resized(Size),
 }
 
 struct State {
     /// The current position of the bubble in the window.
     position: Point,
     /// The size of the window to help generate a color.
-    size: Size<u32>,
+    size: Size,
 }
 
 impl Default for State {
     fn default() -> Self {
         Self {
             position: Point::new(BUBBLE_SIZE / 2.0, BUBBLE_SIZE / 2.0),
-            size: Size::new(1024, 768),
+            size: Size::new(1024.0, 768.0),
         }
     }
 }
 
 /// Returns a color based on the position and size of the bubble.
-fn get_bubble_color(position: Point, size: Size<u32>) -> Color {
-    let width: f32 = (size.width as f32).max(1.0);
-    let height: f32 = (size.height as f32).max(1.0);
+fn get_bubble_color(position: Point, size: Size) -> Color {
+    let width = size.width.max(1.0);
+    let height = size.height.max(1.0);
     let x_ratio = position.x / width;
     let y_ratio = position.y / height;
 
@@ -44,16 +44,14 @@ impl State {
     fn update(&mut self, message: Message) {
         match message {
             Message::MoveTo(position) => self.position = position,
-            Message::Resized(width, height) => self.size = Size::new(width, height),
+            Message::Resized(size) => self.size = size,
         }
     }
 
     /// Listens for window resize events to ensure the bubble color is accurate.
     fn subscription(&self) -> Subscription<Message> {
         iced::event::listen_with(|event, _, _| match event {
-            iced::Event::Window(iced::window::Event::Resized { width, height }) => {
-                Some(Message::Resized(width, height))
-            }
+            iced::Event::Window(iced::window::Event::Resized(size)) => Some(Message::Resized(size)),
             _ => None,
         })
     }
@@ -68,18 +66,18 @@ impl State {
                             .width(Length::Fixed(BUBBLE_SIZE))
                             .height(Length::Fixed(BUBBLE_SIZE))
                             .style(move |_: &Theme| iced::widget::container::Style {
-                                border: Border::rounded(BUBBLE_SIZE / 2.0),
+                                border: Border::default().rounded(BUBBLE_SIZE / 2.0),
                                 background: Some(get_bubble_color(position, size).into()),
                                 ..Default::default()
                             }),
                     )
-                    .padding(Padding::from([
-                        position.y - BUBBLE_SIZE / 2.0,
-                        0.0,
-                        0.0,
-                        position.x - BUBBLE_SIZE / 2.0,
-                    ]))
-                    .fill(),
+                    .padding(
+                        Padding::ZERO
+                            .top(position.y - BUBBLE_SIZE / 2.0)
+                            .left(position.x - BUBBLE_SIZE / 2.0),
+                    )
+                    .width(Length::Fill)
+                    .height(Length::Fill),
                 )
                 .on_move(Message::MoveTo)
                 .into()

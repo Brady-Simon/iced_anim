@@ -59,7 +59,7 @@ impl State {
             button(text(""))
                 .style(move |_, _| iced::widget::button::Style {
                     background: Some(color.into()),
-                    border: Border::rounded(6),
+                    border: Border::default().rounded(6),
                     ..Default::default()
                 })
                 .on_press(Message::ChangeColor(color))
@@ -84,7 +84,7 @@ impl State {
                 )
                 .style(move |_| iced::widget::container::Style {
                     background: Some(color.into()),
-                    border: Border::rounded(6),
+                    border: Border::default().rounded(6),
                     ..Default::default()
                 })
                 .center_x(Length::Fill)
