@@ -6,21 +6,23 @@ use std::time::Duration;
 
 use iced::{
     widget::{container, mouse_area, Space},
-    Border, Color, Element, Length, Point, Size, Subscription, Theme,
+    Border, Color, Element,
+    Length::{self, Fill},
+    Point, Size, Subscription, Theme,
 };
 use iced_anim::{Animation, Spring, SpringEvent, SpringMotion};
 
 #[derive(Debug, Clone)]
 enum Message {
     UpdatePosition(SpringEvent<Point>),
-    Resized(u32, u32),
+    Resized(Size),
 }
 
 struct State {
     /// The current position of the bubble in the window.
     position: Spring<Point>,
     /// The size of the window to help generate a color.
-    size: Size<u32>,
+    size: Size,
 }
 
 impl Default for State {
@@ -30,7 +32,7 @@ impl Default for State {
                 response: Duration::from_millis(500),
                 damping: 0.6,
             }),
-            size: Size::new(1024, 768),
+            size: Size::new(1024.0, 768.0),
         }
     }
 }
@@ -39,16 +41,14 @@ impl State {
     fn update(&mut self, message: Message) {
         match message {
             Message::UpdatePosition(event) => self.position.update(event),
-            Message::Resized(width, height) => self.size = Size::new(width, height),
+            Message::Resized(size) => self.size = size,
         }
     }
 
     /// Listens for window resize events to ensure the bubble color is accurate.
     fn subscription(&self) -> Subscription<Message> {
         iced::event::listen_with(|event, _, _| match event {
-            iced::Event::Window(iced::window::Event::Resized { width, height }) => {
-                Some(Message::Resized(width, height))
-            }
+            iced::Event::Window(iced::window::Event::Resized(size)) => Some(Message::Resized(size)),
             _ => None,
         })
     }
@@ -64,26 +64,28 @@ impl State {
                             .width(self.position.value().x)
                             .height(self.position.value().y)
                             .style(move |_: &Theme| container::Style {
-                                border: Border::rounded(8),
+                                border: Border::default().rounded(8),
                                 background: Some(get_color(self.position.value(), size).into()),
                                 ..Default::default()
                             }),
                     )
-                    .fill(),
+                    .width(Fill)
+                    .height(Fill),
                 )
                 .on_update(Message::UpdatePosition),
             )
             .on_move(|point| Message::UpdatePosition(point.into())),
         )
-        .fill()
+        .width(Fill)
+        .height(Fill)
         .into()
     }
 }
 
 /// Returns a color based on the position and size of the screen.
-fn get_color(position: &Point, size: Size<u32>) -> Color {
-    let width: f32 = (size.width as f32).max(1.0);
-    let height: f32 = (size.height as f32).max(1.0);
+fn get_color(position: &Point, size: Size) -> Color {
+    let width = size.width.max(1.0);
+    let height = size.height.max(1.0);
     let x_ratio = position.x / width;
     let y_ratio = position.y / height;
 
