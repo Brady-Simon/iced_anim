@@ -1,3 +1,8 @@
+//! Derive macro for the `Animate` trait in `iced_anim`.
+//!
+//! This makes it easy to animate your own custom structs. Ensure each field in your struct
+//! already implements the `Animate` trait to derive it automatically. See the documentation
+//! for `iced_anim` for usage and more details.
 extern crate proc_macro;
 extern crate syn;
 #[macro_use]

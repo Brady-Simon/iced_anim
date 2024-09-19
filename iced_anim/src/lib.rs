@@ -3,9 +3,10 @@
 //!
 //! # Overview
 //!
-//! The primary widget is `AnimationBuilder`, which is a widget that implicitly animates a value
-//! anytime it changes. Your state is always up-to-date with the latest value, and the widget will
-//! use spring interpolation to animate the value over a specified duration.
+//! The primary widgets are `Animation` and `AnimationBuilder`, which are widgets that help you
+//! animates a value when it changes. The `Animation` widget allows you to store the animated value
+//! in your app state, while the `AnimationBuilder` widget maintains the animated value so your app
+//! state is always up-to-date with the latest value.
 //!
 //! # Example
 //!
@@ -44,7 +45,7 @@
 //!
 //! The element built within the closure will animate to the new size automatically. A handful of
 //! common types already implement `Animate` like `f32`, `iced::Color`, and `iced::Theme`, with
-//! more to come in the future. You can also dersive `Animate` on your own types to animate them
+//! more to come in the future. You can also derive `Animate` on your own types to animate them
 //! as well.
 //!
 //! ```rust
@@ -84,14 +85,21 @@
 //!
 //! # Supported Iced versions
 //!
-//! This crate currently targets the master version of Iced (0.13-dev as of this writing).
+//! This crate supports Iced 0.13 and newer.
 //!
-//! # Limitations
+//! # `AnimationBuilder` Limitations
 //!
-//! It may be difficult to make generic wrappers around the `AnimationBuilder` due to it needing a
-//! `Fn` closure to build the element and most elements aren't `Clone`. Covering this particular
-//! use case will likely require a separate widget that stores the animated value directly in the
-//! app state instead of within the `AnimationBuilder`.
+//! It might not be easy or possible to pass in non-clonable content like custom
+//! elements to `AnimationBuilder`'s closure to due the closure being having to be
+//! invoked multiple times to animate between values. Making reusable functions
+//! that use this widget and also take a generic element might be difficult.
+//!
+//! Nested animations also don't work if both properties are actively being
+//! animated. One animation at a time will function correctly, but trying to adjust
+//! both at the same time leads to the inner property skipping to the final value.
+//! Use the `Animation` widget if you need any of these properties.
+//!
+//! If these limitations apply to you, consider using the `Animation` widget instead.
 
 pub mod animate;
 pub mod animation;
