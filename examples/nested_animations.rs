@@ -37,7 +37,7 @@ impl State {
         match message {
             Message::AdjustAll => {
                 self.size.update(
-                    if *self.size.value() == 50.0 {
+                    if *self.size.target() == 50.0 {
                         150.0
                     } else {
                         50.0
@@ -45,7 +45,7 @@ impl State {
                     .into(),
                 );
                 self.color.update(
-                    if *self.color.value() == CYAN {
+                    if *self.color.target() == CYAN {
                         MAGENTA
                     } else {
                         CYAN
@@ -61,7 +61,7 @@ impl State {
     fn view(&self) -> Element<Message> {
         let buttons = row![
             button(text("Adjust size")).on_press(Message::ChangeSize(
-                if *self.size.value() == 50.0 {
+                if *self.size.target() == 50.0 {
                     150.0
                 } else {
                     50.0
@@ -69,7 +69,7 @@ impl State {
                 .into()
             )),
             button(text("Adjust color")).on_press(Message::ChangeColor(
-                if *self.color.value() == CYAN {
+                if *self.color.target() == CYAN {
                     MAGENTA
                 } else {
                     CYAN
