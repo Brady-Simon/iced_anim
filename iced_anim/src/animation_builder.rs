@@ -1,4 +1,77 @@
 //! Implicitly animate between value changes.
+//!
+//! # Example
+//!
+//! Here's an example of animating an `f32` value in your app state:
+//!
+//! ```rust
+//! #[derive(Default)]
+//! struct State {
+//!     size: f32,
+//! }
+//! ```
+//!
+//! Then in your view, you can use an `AnimationBuilder` to animate the size of a container.
+//! The element built within the closure will animate to the new size automatically.
+//!
+//! ```rust
+//! # use iced::{Element, widget::{container, text}};
+//! # use iced_anim::AnimationBuilder;
+//! # struct State {
+//! #     size: f32,
+//! # }
+//! # #[derive(Clone)]
+//! # enum Message {}
+//! # impl State {
+//! #     fn view(&self) -> Element<Message> {
+//! AnimationBuilder::new(self.size, |size| {
+//!     container(text(size as isize))
+//!         .center(size)
+//!         .into()
+//! })
+//! .animates_layout(true)
+//! #   .into()
+//! #     }
+//! # }
+//! ```
+//!
+//! You can also animate multiple values at once by using a tuple up to length of four:
+//!
+//! ```rust
+//! # use iced::{Color, widget::{text, container}};
+//! # use iced_anim::AnimationBuilder;
+//! # #[derive(Default)]
+//! # struct MyType {
+//! #   size: f32,
+//! #   color: Color,
+//! # }
+//! # #[derive(Clone)]
+//! # enum Message {}
+//! # impl MyType {
+//! #   fn view(&self) -> iced::Element<Message> {
+//! AnimationBuilder::new((self.size, self.color), |(size, color)| {
+//!     container(text(size as isize).color(color))
+//!         .center(size)
+//!         .into()
+//! })
+//! # .into()
+//! #   }
+//! # }
+//! ```
+//!
+//! # `AnimationBuilder` Limitations
+//!
+//! It might not be easy or possible to pass in non-clonable content like custom
+//! elements to `AnimationBuilder`'s closure to due the closure being having to be
+//! invoked multiple times to animate between values. Making reusable functions
+//! that use this widget and also take a generic element might be difficult.
+//!
+//! Nested animations also don't work if both properties are actively being
+//! animated. One animation at a time will function correctly, but trying to adjust
+//! both at the same time leads to the inner property skipping to the final value.
+//! Use the `Animation` widget if you need any of these properties.
+//!
+//! If these limitations apply to you, consider using the `Animation` widget instead.
 use iced::{
     advanced::{
         graphics::core::event,
