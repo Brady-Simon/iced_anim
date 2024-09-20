@@ -3,49 +3,15 @@
 //!
 //! # Overview
 //!
-//! The primary widget is `AnimationBuilder`, which is a widget that implicitly animates a value
-//! anytime it changes. Your state is always up-to-date with the latest value, and the widget will
-//! use spring interpolation to animate the value over a specified duration.
+//! The primary widgets are `Animation` and `AnimationBuilder`, which are widgets that help you
+//! animates a value when it changes. The `Animation` widget allows you to store the animated value
+//! in your app state, while the `AnimationBuilder` widget maintains the animated value so your app
+//! state is always up-to-date with the latest value. Refer to those widget modules for documentation
+//! and the `examples` directory for examples on how to use them.
 //!
-//! # Example
-//!
-//! You can animate anything that implements `Animate`. For example, you can animate an `f32` value
-//! in your app state:
-//!
-//! ```rust
-//! #[derive(Default)]
-//! struct State {
-//!     size: f32,
-//! }
-//! ```
-//!
-//! Then in your view, you can use an `AnimationBuilder` to animate the size of a container:
-//!
-//! ```rust
-//! # use iced::{Element, widget::{container, text}};
-//! # use iced_anim::AnimationBuilder;
-//! # struct State {
-//! #     size: f32,
-//! # }
-//! # #[derive(Clone)]
-//! # enum Message {}
-//! # impl State {
-//! #     fn view(&self) -> Element<Message> {
-//! AnimationBuilder::new(self.size, |size| {
-//!     container(text(size as isize))
-//!         .center(size)
-//!         .into()
-//! })
-//! .animates_layout(true)
-//! #   .into()
-//! #     }
-//! # }
-//! ```
-//!
-//! The element built within the closure will animate to the new size automatically. A handful of
-//! common types already implement `Animate` like `f32`, `iced::Color`, and `iced::Theme`, with
-//! more to come in the future. You can also dersive `Animate` on your own types to animate them
-//! as well.
+//! You can animate anything that implements `Animate`. A handful of common types already
+//! implement `Animate` like `f32`, `iced::Color`, and `iced::Theme`, with more to come in the
+//! future. You can also derive `Animate` on your own types to animate them as well.
 //!
 //! ```rust
 //! use iced_anim::Animate;
@@ -58,41 +24,15 @@
 //! }
 //! ```
 //!
-//! You can also animate multiple values at once by using a tuple up to length of four:
+//! # Controlling the spring motion
 //!
-//! ```rust
-//! # use iced::{Color, widget::{text, container}};
-//! # use iced_anim::AnimationBuilder;
-//! # #[derive(Default)]
-//! # struct MyType {
-//! #   size: f32,
-//! #   color: Color,
-//! # }
-//! # #[derive(Clone)]
-//! # enum Message {}
-//! # impl MyType {
-//! #   fn view(&self) -> iced::Element<Message> {
-//! AnimationBuilder::new((self.size, self.color), |(size, color)| {
-//!     container(text(size as isize).color(color))
-//!         .center(size)
-//!         .into()
-//! })
-//! # .into()
-//! #   }
-//! # }
-//! ```
+//! The spring motion of an `AnimationBuilder` can be customized. There are a few
+//! defaults like `SpringMotion::Smooth` and `SpringMotion::Bouncy`, but you can
+//! provide a custom response and damping fraction with `SpringMotion::Custom`.
 //!
 //! # Supported Iced versions
 //!
-//! This crate currently targets the master version of Iced (0.13-dev as of this writing).
-//!
-//! # Limitations
-//!
-//! It may be difficult to make generic wrappers around the `AnimationBuilder` due to it needing a
-//! `Fn` closure to build the element and most elements aren't `Clone`. Covering this particular
-//! use case will likely require a separate widget that stores the animated value directly in the
-//! app state instead of within the `AnimationBuilder`.
-
+//! This crate supports Iced 0.13 and newer.
 pub mod animate;
 pub mod animation;
 pub mod animation_builder;

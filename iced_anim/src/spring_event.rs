@@ -29,11 +29,11 @@ use crate::Animate;
 ///
 /// This event represents one of three things:
 /// - A tick event that updates the spring's value, e.g. a frame is rendered
-/// and the spring's value should be updated.
+///   and the spring's value should be updated.
 /// - A target event that sets the spring's target value, e.g. a user presses
-/// a button and changes the target size of an animated value.
+///   a button and changes the target size of an animated value.
 /// - A settle event that ends the animation early by jumping to the target
-/// value.
+///   value.
 ///
 /// This event can be passed to `Spring::update` to update the spring's value.
 #[derive(Debug, Clone, PartialEq)]
