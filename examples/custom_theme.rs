@@ -1,18 +1,21 @@
+//! An example animating a custom theme palette with serde support.
 use iced::{
     daemon::DefaultStyle,
     widget::{button, text},
     Border, Color, Element,
 };
 use iced_anim::{Animate, Animation, Spring, SpringEvent};
+use serde::{Deserialize, Serialize};
 
 /// A custom theme used by your application that supports a `Custom` theme
 /// to power animations between different variants.
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 enum Theme {
     #[default]
     Light,
     Dark,
     /// A custom theme with a custom color palette, useful for animations.
+    #[serde(skip)]
     Custom(Palette),
 }
 
@@ -116,7 +119,7 @@ enum Message {
     ChangeTheme(SpringEvent<Theme>),
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct State {
     /// The current app theme, which may be an animated value.
     theme: Spring<Theme>,
