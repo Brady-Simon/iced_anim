@@ -8,7 +8,8 @@ publish = false
 
 [dev-dependencies]
 iced = { workspace = true, features = ["advanced", "debug", "tokio"] }
-iced_anim = { version = "0.1.0", path = "../iced_anim", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+iced_anim = { version = "0.1.0", path = "../iced_anim", features = ["derive", "serde"] }
 
 [[example]]
 name = "animated_color"
@@ -45,3 +46,7 @@ path = "nested_animations.rs"
 [[example]]
 name = "stateful_animation"
 path = "stateful_animation.rs"
+
+[[example]]
+name = "custom_theme"
+path = "custom_theme.rs"

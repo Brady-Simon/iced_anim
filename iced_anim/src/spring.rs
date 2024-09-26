@@ -12,6 +12,7 @@ pub const ESPILON: f32 = 0.005;
 
 /// A representation of a spring animation that interpolates between values.
 /// You typically won't need to use this directly, but it's used by the `AnimationBuilder`.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spring<T> {
     /// The current value of the spring.
@@ -21,12 +22,15 @@ pub struct Spring<T> {
     /// The type of motion that the spring will follow, which controls damping/stiffness.
     motion: SpringMotion,
     /// The last instant at which this spring's value was updated.
+    #[cfg_attr(feature = "serde", serde(skip, default = "Instant::now"))]
     last_update: Instant,
     /// The current velocity components that make up this spring animation.
+    #[cfg_attr(feature = "serde", serde(skip, default))]
     velocity: Vec<f32>,
     /// The initial distance from the target when the animation was started or interrupted.
     /// This is used to help determine when the spring is near its target and is precomputed
     /// to avoid recalculating it every frame.
+    #[cfg_attr(feature = "serde", serde(skip, default))]
     initial_distance: Vec<f32>,
 }
 

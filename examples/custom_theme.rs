@@ -1,0 +1,162 @@
+//! An example animating a custom theme palette with serde support.
+use iced::{
+    daemon::DefaultStyle,
+    widget::{button, text},
+    Border, Color, Element,
+};
+use iced_anim::{Animate, Animation, Spring, SpringEvent};
+use serde::{Deserialize, Serialize};
+
+/// A custom theme used by your application that supports a `Custom` theme
+/// to power animations between different variants.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+enum Theme {
+    #[default]
+    Light,
+    Dark,
+    /// A custom theme with a custom color palette, useful for animations.
+    #[serde(skip)]
+    Custom(Palette),
+}
+
+impl Theme {
+    /// Gets the relevant color palette for the theme.
+    fn palette(&self) -> Palette {
+        match self {
+            Theme::Light => LIGHT_PALETTE,
+            Theme::Dark => DARK_PALETTE,
+            Theme::Custom(palette) => *palette,
+        }
+    }
+}
+
+// Implement `Animate` trait using the `Theme::Custom` variant for animated values.
+impl Animate for Theme {
+    fn components() -> usize {
+        Palette::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        self.palette().distance_to(&end.palette())
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        let mut palette = self.palette();
+        palette.update(components);
+        *self = Theme::Custom(palette);
+    }
+}
+
+// A default daemon style for the custom theme.
+impl DefaultStyle for Theme {
+    fn default_style(&self) -> iced::daemon::Appearance {
+        let palette = self.palette();
+        iced::daemon::Appearance {
+            text_color: palette.text,
+            background_color: palette.background,
+        }
+    }
+}
+
+// Implement custom catalogs for some widgets to use the custom theme.
+impl button::Catalog for Theme {
+    type Class<'a> = ();
+    fn default<'a>() -> Self::Class<'a> {
+        ()
+    }
+
+    fn style(&self, _class: &Self::Class<'_>, _status: button::Status) -> button::Style {
+        let palette = self.palette();
+        button::Style {
+            text_color: palette.text,
+            background: Some(palette.primary.into()),
+            border: Border::default().rounded(6),
+            ..Default::default()
+        }
+    }
+}
+
+impl text::Catalog for Theme {
+    type Class<'a> = ();
+    fn default<'a>() -> Self::Class<'a> {
+        ()
+    }
+
+    fn style(&self, _class: &Self::Class<'_>) -> text::Style {
+        text::Style {
+            color: Some(self.palette().text),
+        }
+    }
+}
+
+/// A custom color palette used by your application that derives `Animate`.
+/// This palette is what you should use in your custom catalog implementations
+/// because it gets animated when the theme changes.
+#[derive(Debug, Clone, Copy, PartialEq, Animate)]
+struct Palette {
+    background: Color,
+    primary: Color,
+    text: Color,
+}
+
+/// A light theme for your application.
+const LIGHT_PALETTE: Palette = Palette {
+    background: Color::from_rgb(0.9, 0.9, 0.9),
+    primary: Color::from_rgb(0.0, 0.75, 1.0),
+    text: Color::BLACK,
+};
+
+/// A dark theme for your application.
+const DARK_PALETTE: Palette = Palette {
+    background: Color::from_rgb(0.1, 0.1, 0.1),
+    primary: Color::from_rgb(1.0, 0.5, 0.0),
+    text: Color::WHITE,
+};
+
+#[derive(Debug, Clone)]
+enum Message {
+    /// Indicates that the theme should change or is changing.
+    ChangeTheme(SpringEvent<Theme>),
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+struct State {
+    /// The current app theme, which may be an animated value.
+    theme: Spring<Theme>,
+}
+
+impl State {
+    fn theme(&self) -> Theme {
+        self.theme.value().clone()
+    }
+
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::ChangeTheme(event) => self.theme.update(event),
+        }
+    }
+
+    fn view(&self) -> Element<Message, Theme> {
+        Animation::new(
+            &self.theme,
+            button(text("Change theme"))
+                .on_press(Message::ChangeTheme(self.next_theme().into()))
+                .padding(8),
+        )
+        .on_update(Message::ChangeTheme)
+        .into()
+    }
+
+    fn next_theme(&self) -> Theme {
+        match self.theme.target() {
+            Theme::Light => Theme::Dark,
+            _ => Theme::Light,
+        }
+    }
+}
+
+pub fn main() -> iced::Result {
+    iced::application("Custom theme", State::update, State::view)
+        .theme(State::theme)
+        .run()
+}
