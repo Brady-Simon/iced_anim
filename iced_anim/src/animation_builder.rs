@@ -218,14 +218,12 @@ where
         renderer: &Renderer,
         operation: &mut dyn iced::advanced::widget::Operation<()>,
     ) {
-        operation.container(None, layout.bounds(), &mut |operation| {
-            self.cached_element.as_widget().operate(
-                &mut state.children[0],
-                layout,
-                renderer,
-                operation,
-            );
-        })
+        self.cached_element.as_widget().operate(
+            &mut state.children[0],
+            layout,
+            renderer,
+            operation,
+        );
     }
 
     fn overlay<'b>(

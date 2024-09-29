@@ -128,15 +128,19 @@ where
 
     fn mouse_interaction(
         &self,
-        state: &iced::advanced::widget::Tree,
+        tree: &iced::advanced::widget::Tree,
         layout: iced::advanced::Layout<'_>,
         cursor: iced::advanced::mouse::Cursor,
         viewport: &iced::Rectangle,
         renderer: &Renderer,
     ) -> iced::advanced::mouse::Interaction {
-        self.content
-            .as_widget()
-            .mouse_interaction(state, layout, cursor, viewport, renderer)
+        self.content.as_widget().mouse_interaction(
+            &tree.children[0],
+            layout,
+            cursor,
+            viewport,
+            renderer,
+        )
     }
 
     fn operate(
@@ -146,11 +150,9 @@ where
         renderer: &Renderer,
         operation: &mut dyn iced::advanced::widget::Operation<()>,
     ) {
-        operation.container(None, layout.bounds(), &mut |operation| {
-            self.content
-                .as_widget()
-                .operate(&mut state.children[0], layout, renderer, operation);
-        })
+        self.content
+            .as_widget()
+            .operate(&mut state.children[0], layout, renderer, operation);
     }
 
     fn state(&self) -> iced::advanced::widget::tree::State {

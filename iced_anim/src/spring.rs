@@ -11,7 +11,9 @@ use crate::{spring_event::SpringEvent, Animate, SpringMotion};
 pub const ESPILON: f32 = 0.005;
 
 /// A representation of a spring animation that interpolates between values.
-/// You typically won't need to use this directly, but it's used by the `AnimationBuilder`.
+///
+/// You can use this alongside the `Animation` widget to animate changes to your UI
+/// by storing the spring in your state and updating it with events.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spring<T> {
