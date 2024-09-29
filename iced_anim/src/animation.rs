@@ -153,11 +153,6 @@ where
         self.content
             .as_widget()
             .operate(&mut state.children[0], layout, renderer, operation);
-        // operation.container(None, layout.bounds(), &mut |operation| {
-        //     self.content
-        //         .as_widget()
-        //         .operate(&mut state.children[0], layout, renderer, operation);
-        // })
     }
 
     fn state(&self) -> iced::advanced::widget::tree::State {
