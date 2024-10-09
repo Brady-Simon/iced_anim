@@ -50,3 +50,7 @@ path = "stateful_animation.rs"
 [[example]]
 name = "custom_theme"
 path = "custom_theme.rs"
+
+[[example]]
+name = "animated_widgets"
+path = "animated_widgets.rs"
