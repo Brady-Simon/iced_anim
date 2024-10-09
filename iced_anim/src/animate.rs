@@ -296,6 +296,273 @@ impl Animate for palette::Extended {
     }
 }
 
+impl<T> Animate for Option<T>
+where
+    T: Animate,
+{
+    fn components() -> usize {
+        T::components()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        if let Some(inner) = self {
+            inner.update(components);
+        } else {
+            components.nth(T::components() - 1);
+        }
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        match (self, end) {
+            (Some(current), Some(end)) => current.distance_to(end),
+            _ => vec![0.0; T::components()],
+        }
+    }
+}
+
+impl Animate for iced::border::Radius {
+    fn components() -> usize {
+        4
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.top_left.distance_to(&end.top_left),
+            self.top_right.distance_to(&end.top_right),
+            self.bottom_left.distance_to(&end.bottom_left),
+            self.bottom_right.distance_to(&end.bottom_right),
+        ]
+        .concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.top_left.update(components);
+        self.top_right.update(components);
+        self.bottom_left.update(components);
+        self.bottom_right.update(components);
+    }
+}
+
+impl Animate for iced::Border {
+    fn components() -> usize {
+        f32::components() + iced::Color::components() + iced::border::Radius::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.width.distance_to(&end.width),
+            self.color.distance_to(&end.color),
+            self.radius.distance_to(&end.radius),
+        ]
+        .concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.width.update(components);
+        self.color.update(components);
+        self.radius.update(components);
+    }
+}
+
+impl<T> Animate for iced::Vector<T>
+where
+    T: Animate,
+{
+    fn components() -> usize {
+        2 * T::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [self.x.distance_to(&end.x), self.y.distance_to(&end.y)].concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.x.update(components);
+        self.y.update(components);
+    }
+}
+
+impl Animate for iced::Shadow {
+    fn components() -> usize {
+        iced::Color::components() + iced::Vector::<f32>::components() + f32::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.color.distance_to(&end.color),
+            self.offset.distance_to(&end.offset),
+            self.blur_radius.distance_to(&end.blur_radius),
+        ]
+        .concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.color.update(components);
+        self.offset.update(components);
+        self.blur_radius.update(components);
+    }
+}
+
+impl Animate for iced::Radians {
+    fn components() -> usize {
+        f32::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        self.0.distance_to(&end.0)
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.0.update(components);
+    }
+}
+
+impl Animate for iced::gradient::ColorStop {
+    fn components() -> usize {
+        f32::components() + iced::Color::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.offset.distance_to(&end.offset),
+            self.color.distance_to(&end.color),
+        ]
+        .concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.offset.update(components);
+        self.color.update(components);
+    }
+}
+
+impl<T, const N: usize> Animate for [T; N]
+where
+    T: Animate,
+{
+    fn components() -> usize {
+        N * T::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        self.iter()
+            .zip(end.iter())
+            .map(|(start, end)| start.distance_to(end))
+            .flatten()
+            .collect()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        for item in self.iter_mut() {
+            item.update(components);
+        }
+    }
+}
+
+impl Animate for iced::gradient::Linear {
+    fn components() -> usize {
+        iced::Radians::components() + 8 * iced::gradient::ColorStop::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.angle.distance_to(&end.angle),
+            self.stops.distance_to(&end.stops),
+        ]
+        .concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.angle.update(components);
+
+        for stop in &mut self.stops {
+            stop.update(components);
+        }
+    }
+}
+
+impl Animate for iced::Gradient {
+    fn components() -> usize {
+        iced::gradient::Linear::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        match (self, end) {
+            (iced::Gradient::Linear(start), iced::Gradient::Linear(end)) => start.distance_to(end),
+        }
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        match self {
+            iced::Gradient::Linear(start) => start.update(components),
+        }
+    }
+}
+
+impl Animate for iced::Background {
+    fn components() -> usize {
+        iced::gradient::Gradient::components().max(iced::Color::components())
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        match (self, end) {
+            (iced::Background::Color(start), iced::Background::Color(end)) => {
+                let mut distance = start.distance_to(end);
+                distance.resize(Self::components(), 0.0);
+                distance
+            }
+            (iced::Background::Color(_), iced::Background::Gradient(_)) => {
+                vec![0.0; Self::components()]
+            }
+            (iced::Background::Gradient(start), iced::Background::Gradient(end)) => {
+                let mut distance = start.distance_to(end);
+                distance.resize(Self::components(), 0.0);
+                distance
+            }
+            (iced::Background::Gradient(_), iced::Background::Color(_)) => {
+                vec![0.0; Self::components()]
+            }
+        }
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        match self {
+            iced::Background::Color(color) => {
+                color.update(components);
+                let extra = Self::components() - iced::Color::components() - 1;
+                components.nth(extra);
+            }
+            iced::Background::Gradient(gradient) => gradient.update(components),
+        }
+    }
+}
+
+impl Animate for iced::widget::button::Style {
+    fn components() -> usize {
+        Option::<iced::Background>::components()
+            + iced::Color::components()
+            + iced::Border::components()
+            + iced::Shadow::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.background.distance_to(&end.background),
+            self.text_color.distance_to(&end.text_color),
+            self.border.distance_to(&end.border),
+            self.shadow.distance_to(&end.shadow),
+        ]
+        .concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.background.update(components);
+        self.text_color.update(components);
+        self.border.update(components);
+        self.shadow.update(components);
+    }
+}
+
 impl<T1, T2> Animate for (T1, T2)
 where
     T1: Animate,
@@ -455,5 +722,63 @@ mod tests {
             iced::Theme::components(),
             iced::theme::Palette::components() + iced::theme::palette::Extended::components()
         );
+    }
+
+    #[test]
+    fn option_components() {
+        assert_eq!(Option::<f32>::components(), 1);
+    }
+
+    /// `Some` value should update the value with the next component.
+    #[test]
+    fn option_update_some() {
+        let mut option = Some(1.0);
+        option.update(&mut [2.0].iter().copied());
+        assert_eq!(option, Some(3.0));
+    }
+
+    /// Trying to update `None` should update the iterator, but not change the value.
+    #[test]
+    fn option_update_none() {
+        let mut option: Option<f32> = None;
+        let mut iter = [2.0, 4.0].iter().copied();
+        option.update(&mut iter);
+        assert_eq!(option, None);
+
+        // The last component should be left alone by the option update.
+        assert_eq!(iter.next(), Some(4.0));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn update_background() {
+        let mut background = iced::Background::Color(iced::Color::BLACK);
+        let components = vec![0.1 as f32; iced::Background::components()];
+        let mut components = components.iter().copied();
+        background.update(&mut components);
+        assert_ne!(background, iced::Background::Color(iced::Color::BLACK));
+        assert_eq!(components.len(), 0);
+    }
+
+    #[test]
+    fn update_button_style() {
+        let style = iced::widget::button::Style {
+            background: Some(iced::Background::Color(iced::Color::BLACK)),
+            text_color: iced::Color::BLACK,
+            border: iced::Border::default(),
+            shadow: iced::Shadow::default(),
+        };
+        let target = iced::widget::button::Style {
+            background: Some(iced::Background::Color(iced::Color::WHITE)),
+            text_color: iced::Color::WHITE,
+            border: iced::Border::default().width(1.0),
+            shadow: iced::Shadow::default(),
+        };
+
+        let mut spring = crate::Spring::new(style);
+        spring.interrupt(target);
+        spring.tick(std::time::Instant::now());
+        eprintln!("Spring value: {:?}", spring.value());
+        assert_ne!(*spring.value(), style);
     }
 }
