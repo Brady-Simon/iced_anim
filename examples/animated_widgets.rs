@@ -48,5 +48,5 @@ impl State {
 }
 
 pub fn main() -> iced::Result {
-    iced::run("Animated widgets", State::update, State::view)
+    iced::application("Animated widgets", State::update, State::view).run()
 }

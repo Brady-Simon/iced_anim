@@ -241,7 +241,13 @@ where
     }
 
     fn state(&self) -> tree::State {
-        tree::State::new(State::<Theme>::default())
+        // Initialize the state with the current style.
+        let mut state = State::<Theme>::default();
+        // TODO: Figure out how to get the _real_ theme here and not the default.
+        state.style = RefCell::new(state.theme.borrow().style(&self.class, state.status));
+        state.animated_style.interrupt(state.style.borrow().clone());
+        state.animated_style.settle();
+        tree::State::new(state)
     }
 
     fn children(&self) -> Vec<Tree> {
@@ -249,6 +255,13 @@ where
     }
 
     fn diff(&self, tree: &mut Tree) {
+        // If the style changes from outside, then immediately update the style.
+        let state = tree.state.downcast_mut::<State<Theme>>();
+        let new_style = state.theme.borrow().style(&self.class, state.status);
+        if *state.style.borrow() != new_style {
+            state.animated_style.interrupt(new_style);
+            *state.style.borrow_mut() = new_style;
+        }
         tree.diff_children(std::slice::from_ref(&self.content));
     }
 
