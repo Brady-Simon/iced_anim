@@ -16,7 +16,7 @@
 //!     button("Press me!").on_press(Message::ButtonPressed).into()
 //! }
 //! ```
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
 
 use iced::{
     advanced::{
@@ -212,8 +212,8 @@ where
 struct State<Theme> {
     status: Status,
     is_pressed: bool,
-    theme: Rc<RefCell<Theme>>,
-    style: Rc<RefCell<Style>>,
+    theme: RefCell<Theme>,
+    style: RefCell<Style>,
     animated_style: Spring<Style>,
 }
 
@@ -222,8 +222,8 @@ impl<Theme: 'static + Default> Default for State<Theme> {
         State {
             status: Status::Disabled,
             is_pressed: false,
-            theme: Rc::default(),
-            style: Rc::default(),
+            theme: RefCell::default(),
+            style: RefCell::default(),
             animated_style: Spring::default(),
         }
     }
@@ -300,7 +300,6 @@ where
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
     ) -> event::Status {
-        println!("Handling event: {:?}", event);
         if let event::Status::Captured = self.content.as_widget_mut().on_event(
             &mut tree.children[0],
             event.clone(),
@@ -311,7 +310,6 @@ where
             shell,
             viewport,
         ) {
-            println!("Child captured event: {:?}", event);
             return event::Status::Captured;
         }
 
@@ -319,30 +317,19 @@ where
         let state = tree.state.downcast_mut::<State<Theme>>();
         let status = self.get_status(&state, cursor, layout);
         if state.status != status {
-            println!("Setting status: {:?}", status);
             state.status = status;
-            // TODO: Test if interrupting via Rc<RefCell> is possible in draw.
             state
                 .animated_style
                 .interrupt(state.theme.borrow().style(&self.class, status));
-            // state.animated_style.interrupt(state.style.borrow().clone());
             shell.request_redraw(window::RedrawRequest::NextFrame);
         } else if state.animated_style.has_energy() {
             // Request a redraw the spring still has energy remaining.
-            println!("Energy remaining");
             shell.request_redraw(window::RedrawRequest::NextFrame);
         }
 
         match event {
             Event::Window(window::Event::RedrawRequested(now)) => {
                 state.animated_style.tick(now);
-                if !state.animated_style.has_energy() {
-                    println!(
-                        "Animated background settled: {:?}",
-                        state.animated_style.value().background
-                    );
-                }
-                return event::Status::Ignored;
             }
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerPressed { .. }) => {
@@ -400,23 +387,17 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        println!("Drawing");
         let bounds = layout.bounds();
         let content_layout = layout.children().next().unwrap();
         let state = tree.state.downcast_ref::<State<Theme>>();
 
         if *theme != *state.theme.borrow() {
-            println!("Updating theme");
             *state.theme.borrow_mut() = theme.clone();
         }
 
         let style = state.animated_style.value();
         let new_style = theme.style(&self.class, state.status);
         if new_style != *state.style.borrow() {
-            println!(
-                "Updating style ({:?}) - {:?}",
-                state.status, new_style.background
-            );
             *state.style.borrow_mut() = new_style.clone();
         }
 
