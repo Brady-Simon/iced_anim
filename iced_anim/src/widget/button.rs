@@ -102,7 +102,7 @@ impl<'a, Message: Clone> OnPress<'a, Message> {
 impl<'a, Message, Theme, Renderer> Button<'a, Message, Theme, Renderer>
 where
     Renderer: iced::advanced::Renderer,
-    Theme: Catalog,
+    Theme: 'static + Catalog,
 {
     /// Creates a new [`Button`] with the given content.
     pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
@@ -192,7 +192,7 @@ where
     }
 
     /// Gets the status of the [`Button`] based on the current [`State`].
-    fn get_status(&self, state: &State, cursor: Cursor, layout: Layout<'_>) -> Status {
+    fn get_status(&self, state: &State<Theme>, cursor: Cursor, layout: Layout<'_>) -> Status {
         let is_mouse_over = cursor.is_over(layout.bounds());
         if self.on_press.is_none() {
             Status::Disabled
@@ -209,21 +209,20 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct State {
+struct State<Theme> {
     status: Status,
-    /// The new status that triggered an animation.
-    new_status: Option<Status>,
     is_pressed: bool,
+    theme: Rc<RefCell<Theme>>,
     style: Rc<RefCell<Style>>,
     animated_style: Spring<Style>,
 }
 
-impl Default for State {
+impl<Theme: 'static + Default> Default for State<Theme> {
     fn default() -> Self {
         State {
             status: Status::Disabled,
-            new_status: None,
             is_pressed: false,
+            theme: Rc::default(),
             style: Rc::default(),
             animated_style: Spring::default(),
         }
@@ -235,14 +234,14 @@ impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
 where
     Message: 'a + Clone,
     Renderer: 'a + iced::advanced::Renderer,
-    Theme: Catalog,
+    Theme: 'static + Catalog + Default + Clone + PartialEq,
 {
     fn tag(&self) -> tree::Tag {
-        tree::Tag::of::<State>()
+        tree::Tag::of::<State<Theme>>()
     }
 
     fn state(&self) -> tree::State {
-        tree::State::new(State::default())
+        tree::State::new(State::<Theme>::default())
     }
 
     fn children(&self) -> Vec<Tree> {
@@ -250,30 +249,6 @@ where
     }
 
     fn diff(&self, tree: &mut Tree) {
-        // Update the spring's target if it has changed
-        let state = tree.state.downcast_mut::<State>();
-        let style = state.style.borrow();
-        println!(
-            "Diffing (has energy? {:?})",
-            state.animated_style.has_energy()
-        );
-        if let Some(new_status) = state.new_status {
-            println!("Interrupting: {:?}", style);
-            state.status = new_status;
-            state.new_status = None;
-            state.animated_style.interrupt(style.clone());
-            // if self.is_disabled {
-            //     spring.settle();
-            // } else {
-            //     spring.interrupt(self.spring.target().clone());
-            // }
-        }
-        drop(style);
-
-        // if spring.motion() != self.spring.motion() {
-        //     spring.set_motion(self.spring.motion())
-        // }
-
         tree.diff_children(std::slice::from_ref(&self.content));
     }
 
@@ -341,13 +316,16 @@ where
         }
 
         // Redraw anytime the status changes and would trigger a style change.
-        let state = tree.state.downcast_mut::<State>();
+        let state = tree.state.downcast_mut::<State<Theme>>();
         let status = self.get_status(&state, cursor, layout);
         if state.status != status {
             println!("Setting status: {:?}", status);
             state.status = status;
-            state.new_status = Some(status);
-            state.animated_style.interrupt(state.style.borrow().clone());
+            // TODO: Test if interrupting via Rc<RefCell> is possible in draw.
+            state
+                .animated_style
+                .interrupt(state.theme.borrow().style(&self.class, status));
+            // state.animated_style.interrupt(state.style.borrow().clone());
             shell.request_redraw(window::RedrawRequest::NextFrame);
         } else if state.animated_style.has_energy() {
             // Request a redraw the spring still has energy remaining.
@@ -372,7 +350,7 @@ where
                     let bounds = layout.bounds();
 
                     if cursor.is_over(bounds) {
-                        let state = tree.state.downcast_mut::<State>();
+                        let state = tree.state.downcast_mut::<State<Theme>>();
 
                         state.is_pressed = true;
                         shell.request_redraw(window::RedrawRequest::NextFrame);
@@ -384,7 +362,7 @@ where
             Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerLifted { .. }) => {
                 if let Some(on_press) = self.on_press.as_ref().map(OnPress::get) {
-                    let state = tree.state.downcast_mut::<State>();
+                    let state = tree.state.downcast_mut::<State<Theme>>();
 
                     if state.is_pressed {
                         state.is_pressed = false;
@@ -401,7 +379,7 @@ where
                 }
             }
             Event::Touch(touch::Event::FingerLost { .. }) => {
-                let state = tree.state.downcast_mut::<State>();
+                let state = tree.state.downcast_mut::<State<Theme>>();
                 shell.request_redraw(window::RedrawRequest::NextFrame);
 
                 state.is_pressed = false;
@@ -425,7 +403,12 @@ where
         println!("Drawing");
         let bounds = layout.bounds();
         let content_layout = layout.children().next().unwrap();
-        let state = tree.state.downcast_ref::<State>();
+        let state = tree.state.downcast_ref::<State<Theme>>();
+
+        if *theme != *state.theme.borrow() {
+            println!("Updating theme");
+            *state.theme.borrow_mut() = theme.clone();
+        }
 
         let style = state.animated_style.value();
         let new_style = theme.style(&self.class, state.status);
@@ -506,7 +489,7 @@ impl<'a, Message, Theme, Renderer> From<Button<'a, Message, Theme, Renderer>>
     for Element<'a, Message, Theme, Renderer>
 where
     Message: Clone + 'a,
-    Theme: Catalog + 'a,
+    Theme: 'static + Catalog + Default + Clone + PartialEq,
     Renderer: iced::advanced::Renderer + 'a,
 {
     fn from(button: Button<'a, Message, Theme, Renderer>) -> Self {
@@ -526,7 +509,7 @@ pub fn button<'a, Message, Theme, Renderer>(
     content: impl Into<Element<'a, Message, Theme, Renderer>>,
 ) -> Button<'a, Message, Theme, Renderer>
 where
-    Theme: Catalog + 'a,
+    Theme: 'static + Catalog + Default + Clone + PartialEq,
     Renderer: iced::advanced::Renderer,
 {
     Button::new(content)
