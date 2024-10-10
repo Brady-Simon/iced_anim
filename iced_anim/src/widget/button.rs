@@ -24,7 +24,9 @@ use iced::{
         widget::{tree, Operation, Tree},
         Clipboard, Layout, Shell, Widget,
     },
-    event, mouse, overlay, touch,
+    event,
+    mouse::{self, Cursor},
+    overlay, touch,
     widget::button::{Catalog, Status, Style, StyleFn},
     window, Background, Color, Element, Event, Length, Padding, Rectangle, Size, Vector,
 };
@@ -188,10 +190,29 @@ where
         self.class = class.into();
         self
     }
+
+    /// Gets the status of the [`Button`] based on the current [`State`].
+    fn get_status(&self, state: &State, cursor: Cursor, layout: Layout<'_>) -> Status {
+        let is_mouse_over = cursor.is_over(layout.bounds());
+        if self.on_press.is_none() {
+            Status::Disabled
+        } else if is_mouse_over {
+            if state.is_pressed {
+                Status::Pressed
+            } else {
+                Status::Hovered
+            }
+        } else {
+            Status::Active
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 struct State {
+    status: Status,
+    /// The new status that triggered an animation.
+    new_status: Option<Status>,
     is_pressed: bool,
     style: Rc<RefCell<Style>>,
     animated_style: Spring<Style>,
@@ -200,6 +221,8 @@ struct State {
 impl Default for State {
     fn default() -> Self {
         State {
+            status: Status::Disabled,
+            new_status: None,
             is_pressed: false,
             style: Rc::default(),
             animated_style: Spring::default(),
@@ -230,9 +253,14 @@ where
         // Update the spring's target if it has changed
         let state = tree.state.downcast_mut::<State>();
         let style = state.style.borrow();
-        println!("Diffing");
-        if *state.animated_style.target() != *style {
-            println!("Updating style: {:?}", style);
+        println!(
+            "Diffing (has energy? {:?})",
+            state.animated_style.has_energy()
+        );
+        if let Some(new_status) = state.new_status {
+            println!("Interrupting: {:?}", style);
+            state.status = new_status;
+            state.new_status = None;
             state.animated_style.interrupt(style.clone());
             // if self.is_disabled {
             //     spring.settle();
@@ -297,6 +325,7 @@ where
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
     ) -> event::Status {
+        println!("Handling event: {:?}", event);
         if let event::Status::Captured = self.content.as_widget_mut().on_event(
             &mut tree.children[0],
             event.clone(),
@@ -307,18 +336,35 @@ where
             shell,
             viewport,
         ) {
+            println!("Child captured event: {:?}", event);
             return event::Status::Captured;
+        }
+
+        // Redraw anytime the status changes and would trigger a style change.
+        let state = tree.state.downcast_mut::<State>();
+        let status = self.get_status(&state, cursor, layout);
+        if state.status != status {
+            println!("Setting status: {:?}", status);
+            state.status = status;
+            state.new_status = Some(status);
+            state.animated_style.interrupt(state.style.borrow().clone());
+            shell.request_redraw(window::RedrawRequest::NextFrame);
+        } else if state.animated_style.has_energy() {
+            // Request a redraw the spring still has energy remaining.
+            println!("Energy remaining");
+            shell.request_redraw(window::RedrawRequest::NextFrame);
         }
 
         match event {
             Event::Window(window::Event::RedrawRequested(now)) => {
-                println!("Redrawing");
-                let state = tree.state.downcast_mut::<State>();
                 state.animated_style.tick(now);
-                println!(
-                    "Animated background after tick: {:?}",
-                    state.animated_style.value().background
-                );
+                if !state.animated_style.has_energy() {
+                    println!(
+                        "Animated background settled: {:?}",
+                        state.animated_style.value().background
+                    );
+                }
+                return event::Status::Ignored;
             }
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerPressed { .. }) => {
@@ -329,6 +375,7 @@ where
                         let state = tree.state.downcast_mut::<State>();
 
                         state.is_pressed = true;
+                        shell.request_redraw(window::RedrawRequest::NextFrame);
 
                         return event::Status::Captured;
                     }
@@ -341,6 +388,7 @@ where
 
                     if state.is_pressed {
                         state.is_pressed = false;
+                        shell.request_redraw(window::RedrawRequest::NextFrame);
 
                         let bounds = layout.bounds();
 
@@ -354,6 +402,7 @@ where
             }
             Event::Touch(touch::Event::FingerLost { .. }) => {
                 let state = tree.state.downcast_mut::<State>();
+                shell.request_redraw(window::RedrawRequest::NextFrame);
 
                 state.is_pressed = false;
             }
@@ -373,31 +422,18 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
+        println!("Drawing");
         let bounds = layout.bounds();
         let content_layout = layout.children().next().unwrap();
-        let is_mouse_over = cursor.is_over(bounds);
-
-        let status = if self.on_press.is_none() {
-            Status::Disabled
-        } else if is_mouse_over {
-            let state = tree.state.downcast_ref::<State>();
-
-            if state.is_pressed {
-                Status::Pressed
-            } else {
-                Status::Hovered
-            }
-        } else {
-            Status::Active
-        };
-
         let state = tree.state.downcast_ref::<State>();
+
         let style = state.animated_style.value();
-        // println!("Drawing with background: {:?}", style.background);
-        let new_style = theme.style(&self.class, status);
-        // let style = new_style;
+        let new_style = theme.style(&self.class, state.status);
         if new_style != *state.style.borrow() {
-            println!("Updating style: {:?}", status);
+            println!(
+                "Updating style ({:?}) - {:?}",
+                state.status, new_style.background
+            );
             *state.style.borrow_mut() = new_style.clone();
         }
 

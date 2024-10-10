@@ -1,8 +1,13 @@
 use iced::{
-    widget::{column, container, text},
+    widget::{
+        button::{danger, primary},
+        column, container, text,
+    },
+    Alignment::Center,
     Element,
     Length::Fill,
 };
+
 use iced_anim::widget::button;
 
 #[derive(Debug, Clone)]
@@ -25,10 +30,15 @@ impl State {
     fn view(&self) -> Element<Message> {
         container(
             column![
-                button(text("+")).on_press(Message::Adjust(1)),
+                button(text("+"))
+                    .on_press(Message::Adjust(1))
+                    .style(primary),
                 text(self.counter.to_string()).size(24),
-                button(text("-")).on_press(Message::Adjust(-1)),
+                button(text("-"))
+                    .on_press(Message::Adjust(-1))
+                    .style(danger),
             ]
+            .align_x(Center)
             .spacing(8)
             .padding(8),
         )
