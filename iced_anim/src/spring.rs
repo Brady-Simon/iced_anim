@@ -194,6 +194,13 @@ where
         self.velocity = vec![0.0; T::components()];
     }
 
+    /// Makes the spring value and target immediately settle at the given `value`.
+    pub fn settle_at(&mut self, value: T) {
+        self.value = value.clone();
+        self.target = value;
+        self.velocity = vec![0.0; T::components()];
+    }
+
     /// Whether the spring is near the end of its animation.
     ///
     /// The animation will be stopped when the spring is near the target and has low velocity
@@ -247,6 +254,17 @@ mod tests {
     fn has_energy_when_velocity_is_nonzero() {
         let spring = Spring::new(0.0).with_velocity(vec![1.0]);
         assert!(spring.has_energy());
+    }
+
+    /// [`Spring::settle_at`] should set the spring's value and target to the given value
+    /// and bring all velocity components to zero.
+    #[test]
+    fn settle_at() {
+        let mut spring = Spring::new(0.0).with_target(3.0);
+        spring.settle_at(5.0);
+        assert_eq!(spring.value(), &5.0);
+        assert_eq!(spring.target(), &5.0);
+        assert_eq!(spring.velocity, vec![0.0]);
     }
 
     #[test]

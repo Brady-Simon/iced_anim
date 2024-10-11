@@ -1,21 +1,4 @@
-//! Buttons allow your users to perform actions by pressing them.
-//!
-//! # Example
-//! ```no_run
-//! # mod iced { pub mod widget { pub use iced_widget::*; } }
-//! # pub type State = ();
-//! # pub type Element<'a, Message> = iced_widget::core::Element<'a, Message, iced_widget::Theme, iced_widget::Renderer>;
-//! use iced::widget::button;
-//!
-//! #[derive(Clone)]
-//! enum Message {
-//!     ButtonPressed,
-//! }
-//!
-//! fn view(state: &State) -> Element<'_, Message> {
-//!     button("Press me!").on_press(Message::ButtonPressed).into()
-//! }
-//! ```
+//! An animated button that will automatically transition between different styles.
 use iced::{
     advanced::{
         layout, renderer,
@@ -31,43 +14,7 @@ use iced::{
 
 use super::animated_state::AnimatedState;
 
-/// A generic widget that produces a message when pressed.
-///
-/// # Example
-/// ```no_run
-/// # mod iced { pub mod widget { pub use iced_widget::*; } }
-/// # pub type State = ();
-/// # pub type Element<'a, Message> = iced_widget::core::Element<'a, Message, iced_widget::Theme, iced_widget::Renderer>;
-/// use iced::widget::button;
-///
-/// #[derive(Clone)]
-/// enum Message {
-///     ButtonPressed,
-/// }
-///
-/// fn view(state: &State) -> Element<'_, Message> {
-///     button("Press me!").on_press(Message::ButtonPressed).into()
-/// }
-/// ```
-///
-/// If a [`Button::on_press`] handler is not set, the resulting [`Button`] will
-/// be disabled:
-///
-/// ```no_run
-/// # mod iced { pub mod widget { pub use iced_widget::*; } }
-/// # pub type State = ();
-/// # pub type Element<'a, Message> = iced_widget::core::Element<'a, Message, iced_widget::Theme, iced_widget::Renderer>;
-/// use iced::widget::button;
-///
-/// #[derive(Clone)]
-/// enum Message {
-///     ButtonPressed,
-/// }
-///
-/// fn view(state: &State) -> Element<'_, Message> {
-///     button("I am disabled!").into()
-/// }
-/// ```
+/// An animated button that will automatically transition between different styles.
 pub struct Button<'a, Message, Theme = iced::Theme, Renderer = iced::Renderer>
 where
     Renderer: iced::advanced::Renderer,
@@ -321,7 +268,6 @@ where
         ) {
             return event::Status::Captured;
         }
-        println!("Event: {:?}", event);
 
         // Redraw anytime the status changes and would trigger a style change.
         let state = tree.state.downcast_mut::<State<Theme>>();
@@ -331,7 +277,6 @@ where
             .needs_redraw(status, |theme, status| theme.style(&self.class, *status));
 
         if needs_redraw {
-            println!("Needs redraw");
             shell.request_redraw(window::RedrawRequest::NextFrame);
         }
 
@@ -395,7 +340,6 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        println!("Drawing button");
         let bounds = layout.bounds();
         let content_layout = layout.children().next().unwrap();
         let state = tree.state.downcast_ref::<State<Theme>>();

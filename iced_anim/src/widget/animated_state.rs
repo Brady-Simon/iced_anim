@@ -6,6 +6,9 @@ use std::{
 use crate::{Animate, Spring};
 
 /// Helps manage animating styles for widgets.
+///
+/// This maintains the current animated style value for a widget, which updates based on the theme
+/// and widget status.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnimatedState<Status, Theme, Style> {
     /// The current status of the widget, which may affect the styling.
@@ -17,10 +20,19 @@ pub struct AnimatedState<Status, Theme, Style> {
     style: RefCell<Style>,
     /// The animated style used by the widget, and is updated when the style or theme changes.
     animated_style: Spring<Style>,
-    /// Whether the widget has been rendered yet. Necessary because we don't have access to the
-    /// correct theme until the widget has been rendered since the `Theme` is only provided in the
-    /// `draw` function.
-    has_rendered: bool,
+    /// Whether the widget needs to be redrawn and have its animation target updated.
+    rebuild: RefCell<Option<Rebuild>>,
+}
+
+/// How the animated theme should be updated.
+///
+/// Theme transitions are handled by immediately settling the animated style to the new style.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Rebuild {
+    /// Causes the animated style to immediately settle at a new style.
+    Settle,
+    /// Changes the animated style's target to a new style.
+    Interrupt,
 }
 
 impl<Status, Theme, Style> AnimatedState<Status, Theme, Style>
@@ -36,7 +48,7 @@ where
             theme: RefCell::new(theme),
             style: RefCell::new(style),
             animated_style,
-            has_rendered: false,
+            rebuild: RefCell::new(None),
         }
     }
 
@@ -63,10 +75,20 @@ where
         status: Status,
         new_style: impl Fn(&Theme, &Status) -> Style,
     ) -> bool {
-        if !self.has_rendered {
-            // Request a redraw if the widget has not been rendered yet
-            // to get the real theme from `draw`.
-            self.has_rendered = true;
+        let rebuild = self.rebuild.borrow().clone();
+        if let Some(rebuild) = rebuild {
+            self.rebuild.replace(None);
+            let theme = self.theme.borrow().clone();
+            match rebuild {
+                Rebuild::Interrupt => {
+                    self.animated_style
+                        .interrupt(new_style(&theme, &self.status));
+                }
+                Rebuild::Settle => {
+                    self.animated_style
+                        .settle_at(new_style(&theme, &self.status));
+                }
+            }
             true
         } else if self.status != status {
             // Status changes means the style is likely changing.
@@ -97,12 +119,16 @@ where
     ) -> &Style {
         // Ensure the theme is always up-to-date.
         if *self.theme.borrow() != *theme {
+            self.rebuild.replace(Some(Rebuild::Settle));
             self.theme.replace(theme.clone());
         }
 
-        // Update the latest style if it has changed.
+        // Update the latest style if it has changed and indicate a redraw is needed.
         let new_style = new_style(theme, &self.status);
         if new_style != *self.style.borrow() {
+            if self.rebuild.borrow().is_none() {
+                self.rebuild.replace(Some(Rebuild::Interrupt));
+            }
             self.style.replace(new_style.clone());
         }
 
