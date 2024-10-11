@@ -16,8 +16,6 @@
 //!     button("Press me!").on_press(Message::ButtonPressed).into()
 //! }
 //! ```
-use std::cell::RefCell;
-
 use iced::{
     advanced::{
         layout, renderer,
@@ -31,7 +29,7 @@ use iced::{
     window, Background, Color, Element, Event, Length, Padding, Rectangle, Size, Vector,
 };
 
-use crate::Spring;
+use super::animated_state::AnimatedState;
 
 /// A generic widget that produces a message when pressed.
 ///
@@ -70,7 +68,6 @@ use crate::Spring;
 ///     button("I am disabled!").into()
 /// }
 /// ```
-#[allow(missing_debug_implementations)]
 pub struct Button<'a, Message, Theme = iced::Theme, Renderer = iced::Renderer>
 where
     Renderer: iced::advanced::Renderer,
@@ -191,6 +188,17 @@ where
         self
     }
 
+    /// The initial status that this widget will have based on its properties.
+    ///
+    /// This will be used as the initial state value.
+    fn get_initial_status(&self) -> Status {
+        if self.on_press.is_some() {
+            Status::Active
+        } else {
+            Status::Disabled
+        }
+    }
+
     /// Gets the status of the [`Button`] based on the current [`State`].
     fn get_status(&self, state: &State<Theme>, cursor: Cursor, layout: Layout<'_>) -> Status {
         let is_mouse_over = cursor.is_over(layout.bounds());
@@ -210,23 +218,8 @@ where
 
 #[derive(Debug, Clone, PartialEq)]
 struct State<Theme> {
-    status: Status,
     is_pressed: bool,
-    theme: RefCell<Theme>,
-    style: RefCell<Style>,
-    animated_style: Spring<Style>,
-}
-
-impl<Theme: 'static + Default> Default for State<Theme> {
-    fn default() -> Self {
-        State {
-            status: Status::Disabled,
-            is_pressed: false,
-            theme: RefCell::default(),
-            style: RefCell::default(),
-            animated_style: Spring::default(),
-        }
-    }
+    animated_state: AnimatedState<Status, Theme, Style>,
 }
 
 impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
@@ -241,12 +234,15 @@ where
     }
 
     fn state(&self) -> tree::State {
+        let theme = <Theme as Default>::default();
+        let status = self.get_initial_status();
+        let style = theme.style(&self.class, status);
         // Initialize the state with the current style.
-        let mut state = State::<Theme>::default();
-        // TODO: Figure out how to get the _real_ theme here and not the default.
-        state.style = RefCell::new(state.theme.borrow().style(&self.class, state.status));
-        state.animated_style.interrupt(state.style.borrow().clone());
-        state.animated_style.settle();
+        let state = State::<Theme> {
+            is_pressed: false,
+            animated_state: AnimatedState::new(status, theme, style),
+        };
+
         tree::State::new(state)
     }
 
@@ -257,11 +253,11 @@ where
     fn diff(&self, tree: &mut Tree) {
         // If the style changes from outside, then immediately update the style.
         let state = tree.state.downcast_mut::<State<Theme>>();
-        let new_style = state.theme.borrow().style(&self.class, state.status);
-        if *state.style.borrow() != new_style {
-            state.animated_style.interrupt(new_style);
-            *state.style.borrow_mut() = new_style;
-        }
+        let new_style = state
+            .animated_state
+            .theme()
+            .style(&self.class, state.animated_state.status().clone());
+        state.animated_state.diff(new_style);
         tree.diff_children(std::slice::from_ref(&self.content));
     }
 
@@ -325,24 +321,23 @@ where
         ) {
             return event::Status::Captured;
         }
+        println!("Event: {:?}", event);
 
         // Redraw anytime the status changes and would trigger a style change.
         let state = tree.state.downcast_mut::<State<Theme>>();
         let status = self.get_status(&state, cursor, layout);
-        if state.status != status {
-            state.status = status;
-            state
-                .animated_style
-                .interrupt(state.theme.borrow().style(&self.class, status));
-            shell.request_redraw(window::RedrawRequest::NextFrame);
-        } else if state.animated_style.has_energy() {
-            // Request a redraw the spring still has energy remaining.
+        let needs_redraw = state
+            .animated_state
+            .needs_redraw(status, |theme, status| theme.style(&self.class, *status));
+
+        if needs_redraw {
+            println!("Needs redraw");
             shell.request_redraw(window::RedrawRequest::NextFrame);
         }
 
         match event {
             Event::Window(window::Event::RedrawRequested(now)) => {
-                state.animated_style.tick(now);
+                state.animated_state.tick(now);
             }
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerPressed { .. }) => {
@@ -400,19 +395,14 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
+        println!("Drawing button");
         let bounds = layout.bounds();
         let content_layout = layout.children().next().unwrap();
         let state = tree.state.downcast_ref::<State<Theme>>();
 
-        if *theme != *state.theme.borrow() {
-            *state.theme.borrow_mut() = theme.clone();
-        }
-
-        let style = state.animated_style.value();
-        let new_style = theme.style(&self.class, state.status);
-        if new_style != *state.style.borrow() {
-            *state.style.borrow_mut() = new_style.clone();
-        }
+        let style = state
+            .animated_state
+            .current_style(theme, |theme, status| theme.style(&self.class, *status));
 
         if style.background.is_some() || style.border.width > 0.0 || style.shadow.color.a > 0.0 {
             renderer.fill_quad(
