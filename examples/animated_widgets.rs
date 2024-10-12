@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, time::Duration};
+use std::{f32::consts::PI, sync::LazyLock, time::Duration};
 
 use iced::{
     gradient::{ColorStop, Linear},
@@ -12,51 +12,61 @@ use iced::{
     Theme,
 };
 
-use iced_anim::{widget::button, SpringMotion};
+use iced_anim::{
+    widget::{button, checkbox},
+    SpringMotion,
+};
 
 #[derive(Debug, Clone)]
 enum Message {
     Adjust(i32),
+    DisableButtons(bool),
 }
 
 #[derive(Debug, Default)]
 struct State {
+    /// The counter value.
     counter: i32,
+    /// Whether the buttons in this example are disabled
+    is_disabled: bool,
 }
 
 impl State {
     fn update(&mut self, message: Message) {
         match message {
             Message::Adjust(amount) => self.counter += amount,
+            Message::DisableButtons(disabled) => self.is_disabled = disabled,
         };
     }
 
     fn view(&self) -> Element<Message> {
+        let is_enabled = !self.is_disabled;
         container(
             column![
                 button(text("+"))
-                    .on_press(Message::Adjust(1))
+                    .on_press_maybe(is_enabled.then_some(Message::Adjust(1)))
                     .style(primary),
                 row![
                     button(text("-10"))
-                        .on_press(Message::Adjust(-10))
+                        .on_press_maybe(is_enabled.then_some(Message::Adjust(-10)))
                         .style(danger_gradient),
                     text(self.counter.to_string()).size(24).width(60.0).center(),
                     button(text("+10"))
-                        .on_press(Message::Adjust(10))
+                        .on_press_maybe(is_enabled.then_some(Message::Adjust(10)))
                         .style(success_gradient),
                 ]
                 .spacing(8),
                 button(text("-"))
-                    .on_press(Message::Adjust(-1))
+                    .on_press_maybe(is_enabled.then_some(Message::Adjust(-1)))
                     .style(danger),
                 button(text("Reset").size(20))
-                    .on_press(Message::Adjust(-self.counter))
+                    .on_press_maybe(is_enabled.then_some(Message::Adjust(-self.counter)))
                     .motion(SpringMotion::Custom {
                         response: Duration::from_millis(1000),
                         damping: SpringMotion::Smooth.damping(),
                     })
                     .style(rainbow_style),
+                checkbox("Disable Buttons", self.is_disabled).on_toggle(Message::DisableButtons)
             ]
             .align_x(Center)
             .spacing(8)
@@ -73,9 +83,28 @@ pub fn main() -> iced::Result {
         .run()
 }
 
+/// A disabled gradient for the custom button styling.
+static DISABLED_GRADIENT: LazyLock<Gradient> = LazyLock::new(|| {
+    Gradient::Linear(Linear::new(2.0 * PI).add_stops([
+        ColorStop {
+            offset: 0.0,
+            color: Color::from_rgb(0.7, 0.7, 0.8),
+        },
+        ColorStop {
+            offset: 0.5,
+            color: Color::from_rgb(0.5, 0.5, 0.6),
+        },
+        ColorStop {
+            offset: 1.0,
+            color: Color::from_rgb(0.3, 0.3, 0.4),
+        },
+    ]))
+});
+
 fn danger_gradient(theme: &Theme, status: Status) -> iced::widget::button::Style {
     let danger = theme.extended_palette().danger;
     let gradient = match status {
+        Status::Disabled => *DISABLED_GRADIENT,
         Status::Active => Gradient::Linear(Linear::new(0).add_stops([
             ColorStop {
                 offset: 0.0,
@@ -116,6 +145,7 @@ fn danger_gradient(theme: &Theme, status: Status) -> iced::widget::button::Style
 fn success_gradient(theme: &Theme, status: Status) -> iced::widget::button::Style {
     let success = theme.extended_palette().success;
     let gradient = match status {
+        Status::Disabled => *DISABLED_GRADIENT,
         Status::Active => Gradient::Linear(Linear::new(0).add_stops([
             ColorStop {
                 offset: 0.0,
@@ -162,6 +192,7 @@ fn rainbow_style(_theme: &Theme, status: Status) -> iced::widget::button::Style 
     const VIOLET: Color = Color::from_rgb(0.56, 0.0, 1.0);
 
     let gradient = match status {
+        Status::Disabled => *DISABLED_GRADIENT,
         Status::Active => Gradient::Linear(Linear::new(0).add_stops([
             ColorStop {
                 offset: 0.0,

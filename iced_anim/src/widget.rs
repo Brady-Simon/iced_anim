@@ -5,6 +5,8 @@
 //! have been fitted to include animations by default.
 mod animated_state;
 pub mod button;
+pub mod checkbox;
 
 pub use animated_state::AnimatedState;
 pub use button::{button, Button};
+pub use checkbox::{checkbox, Checkbox};
