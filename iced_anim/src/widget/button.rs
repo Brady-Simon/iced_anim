@@ -12,6 +12,8 @@ use iced::{
     window, Background, Color, Element, Event, Length, Padding, Rectangle, Size, Vector,
 };
 
+use crate::SpringMotion;
+
 use super::animated_state::AnimatedState;
 
 /// An animated button that will automatically transition between different styles.
@@ -27,6 +29,7 @@ where
     padding: Padding,
     clip: bool,
     class: Theme::Class<'a>,
+    motion: SpringMotion,
 }
 
 enum OnPress<'a, Message> {
@@ -60,6 +63,7 @@ where
             padding: DEFAULT_PADDING,
             clip: false,
             class: Theme::default(),
+            motion: SpringMotion::default(),
         }
     }
 
@@ -135,6 +139,12 @@ where
         self
     }
 
+    /// Sets the motion that will be used by animations.
+    pub fn motion(mut self, motion: SpringMotion) -> Self {
+        self.motion = motion;
+        self
+    }
+
     /// The initial status that this widget will have based on its properties.
     ///
     /// This will be used as the initial state value.
@@ -187,7 +197,7 @@ where
         // Initialize the state with the current style.
         let state = State::<Theme> {
             is_pressed: false,
-            animated_state: AnimatedState::new(status, theme, style),
+            animated_state: AnimatedState::new(status, theme, style).with_motion(self.motion),
         };
 
         tree::State::new(state)
@@ -204,7 +214,7 @@ where
             .animated_state
             .theme()
             .style(&self.class, state.animated_state.status().clone());
-        state.animated_state.diff(new_style);
+        state.animated_state.diff(self.motion, new_style);
         tree.diff_children(std::slice::from_ref(&self.content));
     }
 

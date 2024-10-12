@@ -778,7 +778,6 @@ mod tests {
         let mut spring = crate::Spring::new(style);
         spring.interrupt(target);
         spring.tick(std::time::Instant::now());
-        eprintln!("Spring value: {:?}", spring.value());
         assert_ne!(*spring.value(), style);
     }
 }

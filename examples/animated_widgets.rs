@@ -1,14 +1,18 @@
+use std::{f32::consts::PI, time::Duration};
+
 use iced::{
+    gradient::{ColorStop, Linear},
     widget::{
-        button::{danger, primary},
-        column, container, text,
+        button::{danger, primary, Status},
+        column, container, row, text,
     },
     Alignment::Center,
-    Element,
+    Background, Border, Color, Element, Gradient,
     Length::Fill,
+    Theme,
 };
 
-use iced_anim::widget::button;
+use iced_anim::{widget::button, SpringMotion};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -33,10 +37,26 @@ impl State {
                 button(text("+"))
                     .on_press(Message::Adjust(1))
                     .style(primary),
-                text(self.counter.to_string()).size(24),
+                row![
+                    button(text("-10"))
+                        .on_press(Message::Adjust(-10))
+                        .style(danger_gradient),
+                    text(self.counter.to_string()).size(24).width(60.0).center(),
+                    button(text("+10"))
+                        .on_press(Message::Adjust(10))
+                        .style(success_gradient),
+                ]
+                .spacing(8),
                 button(text("-"))
                     .on_press(Message::Adjust(-1))
                     .style(danger),
+                button(text("Reset").size(20))
+                    .on_press(Message::Adjust(-self.counter))
+                    .motion(SpringMotion::Custom {
+                        response: Duration::from_millis(1000),
+                        damping: SpringMotion::Smooth.damping(),
+                    })
+                    .style(rainbow_style),
             ]
             .align_x(Center)
             .spacing(8)
@@ -51,4 +71,136 @@ pub fn main() -> iced::Result {
     iced::application("Animated widgets", State::update, State::view)
         .theme(|_| iced::Theme::CatppuccinFrappe)
         .run()
+}
+
+fn danger_gradient(theme: &Theme, status: Status) -> iced::widget::button::Style {
+    let danger = theme.extended_palette().danger;
+    let gradient = match status {
+        Status::Active => Gradient::Linear(Linear::new(0).add_stops([
+            ColorStop {
+                offset: 0.0,
+                color: Color::from_rgb(0.6, 0.0, 0.0),
+            },
+            ColorStop {
+                offset: 0.5,
+                color: Color::from_rgb(0.8, 0.0, 0.0),
+            },
+            ColorStop {
+                offset: 1.0,
+                color: Color::from_rgb(1.0, 0.0, 0.0),
+            },
+        ])),
+        _ => Gradient::Linear(Linear::new(0).add_stops([
+            ColorStop {
+                offset: 0.0,
+                color: Color::from_rgb(1.0, 0.6, 0.2),
+            },
+            ColorStop {
+                offset: 0.5,
+                color: Color::from_rgb(1.0, 0.4, 0.1),
+            },
+            ColorStop {
+                offset: 1.0,
+                color: Color::from_rgb(0.8, 0.3, 0.0),
+            },
+        ])),
+    };
+    iced::widget::button::Style {
+        background: Some(Background::Gradient(gradient)),
+        text_color: danger.base.text,
+        border: Border::default().rounded(24.0),
+        ..Default::default()
+    }
+}
+
+fn success_gradient(theme: &Theme, status: Status) -> iced::widget::button::Style {
+    let success = theme.extended_palette().success;
+    let gradient = match status {
+        Status::Active => Gradient::Linear(Linear::new(0).add_stops([
+            ColorStop {
+                offset: 0.0,
+                color: Color::from_rgb(0.8, 0.9, 1.0),
+            },
+            ColorStop {
+                offset: 0.5,
+                color: Color::from_rgb(0.4, 0.6, 0.9),
+            },
+            ColorStop {
+                offset: 1.0,
+                color: Color::from_rgb(0.0, 0.3, 0.8),
+            },
+        ])),
+        _ => Gradient::Linear(Linear::new(0).add_stops([
+            ColorStop {
+                offset: 0.0,
+                color: Color::from_rgb(0.8, 1.0, 0.8),
+            },
+            ColorStop {
+                offset: 0.5,
+                color: Color::from_rgb(0.4, 0.9, 0.4),
+            },
+            ColorStop {
+                offset: 1.0,
+                color: Color::from_rgb(0.0, 0.8, 0.0),
+            },
+        ])),
+    };
+    iced::widget::button::Style {
+        background: Some(Background::Gradient(gradient)),
+        text_color: success.base.text,
+        border: Border::default().rounded(24.0),
+        ..Default::default()
+    }
+}
+
+fn rainbow_style(_theme: &Theme, status: Status) -> iced::widget::button::Style {
+    const RED: Color = Color::from_rgb(1.0, 0.0, 0.0);
+    const ORANGE: Color = Color::from_rgb(1.0, 0.5, 0.0);
+    const YELLOW: Color = Color::from_rgb(1.0, 1.0, 0.0);
+    const BLUE: Color = Color::from_rgb(0.0, 0.0, 1.0);
+    const INDIGO: Color = Color::from_rgb(0.29, 0.0, 0.51);
+    const VIOLET: Color = Color::from_rgb(0.56, 0.0, 1.0);
+
+    let gradient = match status {
+        Status::Active => Gradient::Linear(Linear::new(0).add_stops([
+            ColorStop {
+                offset: 0.0,
+                color: RED,
+            },
+            ColorStop {
+                offset: 0.5,
+                color: ORANGE,
+            },
+            ColorStop {
+                offset: 1.0,
+                color: YELLOW,
+            },
+        ])),
+        _ => Gradient::Linear(Linear::new(PI).add_stops([
+            ColorStop {
+                offset: 0.0,
+                color: VIOLET,
+            },
+            ColorStop {
+                offset: 0.5,
+                color: INDIGO,
+            },
+            ColorStop {
+                offset: 1.0,
+                color: BLUE,
+            },
+        ])),
+    };
+    iced::widget::button::Style {
+        text_color: match status {
+            Status::Active => Color::BLACK,
+            _ => Color::WHITE,
+        },
+        background: Some(Background::Gradient(gradient)),
+        border: match status {
+            Status::Active => Border::default().width(2.0).color(Color::BLACK).rounded(0),
+            _ => Border::default().width(2.0).color(Color::WHITE).rounded(24),
+        },
+        ..Default::default()
+    }
 }

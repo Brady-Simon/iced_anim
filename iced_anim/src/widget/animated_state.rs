@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use crate::{Animate, Spring};
+use crate::{Animate, Spring, SpringMotion};
 
 /// Helps manage animating styles for widgets.
 ///
@@ -60,8 +60,18 @@ where
         &self.status
     }
 
+    /// Sets the motion of the animated style.
+    pub fn with_motion(mut self, motion: SpringMotion) -> Self {
+        self.animated_style.set_motion(motion);
+        self
+    }
+
     /// Updates this animated state based on a potentially new `style` received by the widget.
-    pub fn diff(&mut self, style: Style) {
+    pub fn diff(&mut self, motion: SpringMotion, style: Style) {
+        if self.animated_style.motion() != motion {
+            self.animated_style.set_motion(motion);
+        }
+
         if *self.style.borrow() != style {
             self.animated_style.interrupt(style.clone());
             self.style.replace(style);
