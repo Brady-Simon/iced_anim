@@ -39,6 +39,8 @@ pub mod animation_builder;
 pub mod spring;
 pub mod spring_event;
 pub mod spring_motion;
+
+#[cfg(feature = "widgets")]
 pub mod widget;
 
 pub use animate::Animate;

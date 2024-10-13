@@ -15,3 +15,4 @@ serde = { version = "1.0", features = ["derive"], optional = true }
 [features]
 derive = ["dep:iced_anim_derive"]
 serde = ["dep:serde"]
+widgets = []
