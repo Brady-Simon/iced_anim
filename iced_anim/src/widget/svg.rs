@@ -1,27 +1,19 @@
 //! Svg widgets display vector graphics in your application.
-use iced::advanced::layout;
-use iced::advanced::renderer;
-use iced::advanced::widget::tree;
-use iced::advanced::widget::Tree;
-use iced::mouse;
-use iced::mouse::Cursor;
-use iced::widget::svg::Catalog;
-use iced::widget::svg::Handle;
-use iced::widget::svg::Status;
-use iced::widget::svg::Style;
-use iced::widget::svg::StyleFn;
-use iced::window;
-use iced::Event;
+use super::AnimatedState;
+use crate::SpringMotion;
+use iced::advanced::{
+    layout, renderer,
+    widget::{tree, Tree},
+};
 use iced::{
     advanced::{svg, Layout, Widget},
-    ContentFit, Element, Length, Point, Rectangle, Rotation, Size, Vector,
+    mouse::{self, Cursor},
+    window, ContentFit, Element, Event, Length, Point, Rectangle, Rotation, Size, Vector,
 };
-
 use std::path::PathBuf;
 
-use crate::SpringMotion;
-
-use super::AnimatedState;
+// Re-export the widget types for convenience
+pub use iced::widget::svg::{Catalog, Handle, Status, Style, StyleFn};
 
 /// A vector graphics image.
 ///

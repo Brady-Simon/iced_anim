@@ -1,4 +1,6 @@
 //! An animated button that will automatically transition between different styles.
+use super::animated_state::AnimatedState;
+use crate::SpringMotion;
 use iced::{
     advanced::{
         layout, renderer,
@@ -7,14 +9,14 @@ use iced::{
     },
     event,
     mouse::{self, Cursor},
-    overlay, touch,
-    widget::button::{Catalog, Status, Style, StyleFn},
-    window, Background, Color, Element, Event, Length, Padding, Rectangle, Size, Vector,
+    overlay, touch, window, Background, Color, Element, Event, Length, Padding, Rectangle, Size,
+    Vector,
 };
 
-use crate::SpringMotion;
-
-use super::animated_state::AnimatedState;
+// Re-export the widget types for convenience
+pub use iced::widget::button::{
+    danger, primary, secondary, success, text, Catalog, Status, Style, StyleFn,
+};
 
 /// An animated button that will automatically transition between different styles.
 pub struct Button<'a, Message, Theme = iced::Theme, Renderer = iced::Renderer>
