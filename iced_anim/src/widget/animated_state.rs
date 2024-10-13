@@ -54,6 +54,7 @@
 //! 4. Update any other references to `State` to use the correct generics, like `State<Theme>`.
 //!    Also make sure to include the following bounds on the `Theme` generic type:
 //!    - 'static + Catalog + Default + Clone + PartialEq
+//!
 //!    We need `'static` because `Widget::tag` requires a static type, and unfortunately for now
 //!    we must store the theme in the [`AnimatedState`] because we can't access it in `on_event`
 //!    where we would want to update the animated style. We need `Default + Clone + PartialEq` to
@@ -192,7 +193,7 @@ where
         status: Status,
         new_style: impl Fn(&Theme, &Status) -> Style,
     ) -> bool {
-        let rebuild = self.rebuild.borrow().clone();
+        let rebuild = *self.rebuild.borrow();
         if let Some(rebuild) = rebuild {
             self.rebuild.replace(None);
             let theme = self.theme.borrow().clone();

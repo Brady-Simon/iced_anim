@@ -447,8 +447,7 @@ where
     fn distance_to(&self, end: &Self) -> Vec<f32> {
         self.iter()
             .zip(end.iter())
-            .map(|(start, end)| start.distance_to(end))
-            .flatten()
+            .flat_map(|(start, end)| start.distance_to(end))
             .collect()
     }
 

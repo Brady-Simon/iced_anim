@@ -213,7 +213,7 @@ where
         let new_style = state
             .animated_state
             .theme()
-            .style(&self.class, state.animated_state.status().clone());
+            .style(&self.class, *state.animated_state.status());
         state.animated_state.diff(self.motion, new_style);
         tree.diff_children(std::slice::from_ref(&self.content));
     }
@@ -281,7 +281,7 @@ where
 
         // Redraw anytime the status changes and would trigger a style change.
         let state = tree.state.downcast_mut::<State<Theme>>();
-        let status = self.get_status(&state, cursor, layout);
+        let status = self.get_status(state, cursor, layout);
         let needs_redraw = state
             .animated_state
             .needs_redraw(status, |theme, status| theme.style(&self.class, *status));

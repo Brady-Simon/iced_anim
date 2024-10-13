@@ -182,7 +182,7 @@ where
         let new_style = state
             .animated_state
             .theme()
-            .style(&self.class, state.animated_state.status().clone());
+            .style(&self.class, *state.animated_state.status());
         state.animated_state.diff(self.motion, new_style);
     }
 
@@ -265,7 +265,7 @@ where
         let state = tree.state.downcast_ref::<State<Theme>>();
         let style = state
             .animated_state
-            .current_style(&theme, |theme, status| theme.style(&self.class, *status));
+            .current_style(theme, |theme, status| theme.style(&self.class, *status));
 
         let render = |renderer: &mut Renderer| {
             renderer.draw_svg(
@@ -308,11 +308,8 @@ where
             shell.request_redraw(window::RedrawRequest::NextFrame);
         }
 
-        match event {
-            Event::Window(window::Event::RedrawRequested(now)) => {
-                state.animated_state.tick(now);
-            }
-            _ => {}
+        if let Event::Window(window::Event::RedrawRequested(now)) = event {
+            state.animated_state.tick(now);
         }
 
         iced::event::Status::Ignored
