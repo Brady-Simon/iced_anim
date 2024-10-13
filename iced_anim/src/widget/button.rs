@@ -159,7 +159,7 @@ where
     }
 
     /// Gets the status of the [`Button`] based on the current [`State`].
-    fn get_status(&self, state: &State<Theme>, cursor: Cursor, layout: Layout<'_>) -> Status {
+    fn get_status(&self, state: &State, cursor: Cursor, layout: Layout<'_>) -> Status {
         let is_mouse_over = cursor.is_over(layout.bounds());
         if self.on_press.is_none() {
             Status::Disabled
@@ -176,9 +176,9 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct State<Theme> {
+struct State {
     is_pressed: bool,
-    animated_state: AnimatedState<Status, Theme, Style>,
+    animated_state: AnimatedState<Status, Style>,
 }
 
 impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
@@ -189,17 +189,15 @@ where
     Theme: 'static + Catalog + Default + Clone + PartialEq,
 {
     fn tag(&self) -> tree::Tag {
-        tree::Tag::of::<State<Theme>>()
+        tree::Tag::of::<State>()
     }
 
     fn state(&self) -> tree::State {
-        let theme = <Theme as Default>::default();
         let status = self.get_initial_status();
-        let style = theme.style(&self.class, status);
         // Initialize the state with the current style.
-        let state = State::<Theme> {
+        let state = State {
             is_pressed: false,
-            animated_state: AnimatedState::new(status, theme, style).with_motion(self.motion),
+            animated_state: AnimatedState::new(status, self.motion),
         };
 
         tree::State::new(state)
@@ -211,12 +209,8 @@ where
 
     fn diff(&self, tree: &mut Tree) {
         // If the style changes from outside, then immediately update the style.
-        let state = tree.state.downcast_mut::<State<Theme>>();
-        let new_style = state
-            .animated_state
-            .theme()
-            .style(&self.class, *state.animated_state.status());
-        state.animated_state.diff(self.motion, new_style);
+        let state = tree.state.downcast_mut::<State>();
+        state.animated_state.diff(self.motion);
         tree.diff_children(std::slice::from_ref(&self.content));
     }
 
@@ -282,11 +276,9 @@ where
         }
 
         // Redraw anytime the status changes and would trigger a style change.
-        let state = tree.state.downcast_mut::<State<Theme>>();
+        let state = tree.state.downcast_mut::<State>();
         let status = self.get_status(state, cursor, layout);
-        let needs_redraw = state
-            .animated_state
-            .needs_redraw(status, |theme, status| theme.style(&self.class, *status));
+        let needs_redraw = state.animated_state.needs_redraw(status);
 
         if needs_redraw {
             shell.request_redraw(window::RedrawRequest::NextFrame);
@@ -302,7 +294,7 @@ where
                     let bounds = layout.bounds();
 
                     if cursor.is_over(bounds) {
-                        let state = tree.state.downcast_mut::<State<Theme>>();
+                        let state = tree.state.downcast_mut::<State>();
 
                         state.is_pressed = true;
                         shell.request_redraw(window::RedrawRequest::NextFrame);
@@ -314,7 +306,7 @@ where
             Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerLifted { .. }) => {
                 if let Some(on_press) = self.on_press.as_ref().map(OnPress::get) {
-                    let state = tree.state.downcast_mut::<State<Theme>>();
+                    let state = tree.state.downcast_mut::<State>();
 
                     if state.is_pressed {
                         state.is_pressed = false;
@@ -331,7 +323,7 @@ where
                 }
             }
             Event::Touch(touch::Event::FingerLost { .. }) => {
-                let state = tree.state.downcast_mut::<State<Theme>>();
+                let state = tree.state.downcast_mut::<State>();
                 shell.request_redraw(window::RedrawRequest::NextFrame);
 
                 state.is_pressed = false;
@@ -354,11 +346,11 @@ where
     ) {
         let bounds = layout.bounds();
         let content_layout = layout.children().next().unwrap();
-        let state = tree.state.downcast_ref::<State<Theme>>();
+        let state = tree.state.downcast_ref::<State>();
 
         let style = state
             .animated_state
-            .current_style(theme, |theme, status| theme.style(&self.class, *status));
+            .current_style(|status| theme.style(&self.class, *status));
 
         if style.background.is_some() || style.border.width > 0.0 || style.shadow.color.a > 0.0 {
             renderer.fill_quad(

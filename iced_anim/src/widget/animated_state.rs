@@ -106,10 +106,7 @@
 //! 9. Finally, ensure your widget handles [`iced::window::Event::RedrawRequested`] events by
 //!    calling [`AnimatedState::tick`] to update the animated style with the current time. This
 //!    is how the animated state can update the style over time.
-use std::{
-    cell::{Ref, RefCell},
-    time::Instant,
-};
+use std::{cell::RefCell, time::Instant};
 
 use crate::{Animate, Spring, SpringMotion};
 
@@ -118,18 +115,15 @@ use crate::{Animate, Spring, SpringMotion};
 /// This maintains the current animated style value for a widget, which updates based on the theme
 /// and widget status.
 #[derive(Debug, Clone, PartialEq)]
-pub struct AnimatedState<Status, Theme, Style> {
+pub struct AnimatedState<Status, Style> {
     /// The current status of the widget, which may affect the styling.
     status: Status,
-    /// The current theme of the widget. Used to update the style and tracked to ensure the styling
-    /// is always up-to-date. This is a `RefCell` because we only have access to the theme in
-    /// `draw`, but we have update the animated style in `on_event`, which doesn't have a `theme`.
-    theme: RefCell<Theme>,
-    style: RefCell<Style>,
+    style: RefCell<Option<Style>>,
     /// The animated style used by the widget, and is updated when the style or theme changes.
-    animated_style: Spring<Style>,
+    animated_style: RefCell<Option<Spring<Style>>>,
     /// Whether the widget needs to be redrawn and have its animation target updated.
     rebuild: RefCell<Option<Rebuild>>,
+    motion: SpringMotion,
 }
 
 /// How the animated theme should be updated.
@@ -143,25 +137,19 @@ enum Rebuild {
     Interrupt,
 }
 
-impl<Status, Theme, Style> AnimatedState<Status, Theme, Style>
+impl<Status, Style> AnimatedState<Status, Style>
 where
     Status: PartialEq,
     Style: Animate + Clone + PartialEq,
-    Theme: Clone + PartialEq,
 {
-    pub fn new(status: Status, theme: Theme, style: Style) -> Self {
-        let animated_style = Spring::new(style.clone());
+    pub fn new(status: Status, motion: SpringMotion) -> Self {
         Self {
             status,
-            theme: RefCell::new(theme),
-            style: RefCell::new(style),
-            animated_style,
+            style: RefCell::new(None),
+            animated_style: RefCell::new(None),
             rebuild: RefCell::new(None),
+            motion,
         }
-    }
-
-    pub fn theme(&self) -> Ref<Theme> {
-        self.theme.borrow()
     }
 
     pub fn status(&self) -> &Status {
@@ -170,54 +158,47 @@ where
 
     /// Sets the motion of the animated style.
     pub fn with_motion(mut self, motion: SpringMotion) -> Self {
-        self.animated_style.set_motion(motion);
+        self.motion = motion;
+        {
+            let mut animated_style = self.animated_style.borrow_mut();
+            if let Some(style) = animated_style.as_mut() {
+                style.set_motion(motion);
+            }
+        }
         self
     }
 
     /// Updates this animated state based on a potentially new `style` received by the widget.
-    pub fn diff(&mut self, motion: SpringMotion, style: Style) {
-        if self.animated_style.motion() != motion {
-            self.animated_style.set_motion(motion);
+    pub fn diff(&mut self, motion: SpringMotion) {
+        if self.motion != motion {
+            self.motion = motion;
+            let mut animated_style = self.animated_style.borrow_mut();
+            if let Some(style) = animated_style.as_mut() {
+                style.set_motion(motion);
+            }
         }
 
-        if *self.style.borrow() != style {
-            self.animated_style.interrupt(style.clone());
-            self.style.replace(style);
-        }
+        // if *self.style.borrow() != style {
+        //     self.animated_style.interrupt(style.clone());
+        //     self.style.replace(style);
+        // }
     }
 
     /// Determines whether the widget needs to be redrawn based on events, updating the status and
     /// animated style as necessary. Generally called in a widget's `on_event` function.
-    pub fn needs_redraw(
-        &mut self,
-        status: Status,
-        new_style: impl Fn(&Theme, &Status) -> Style,
-    ) -> bool {
-        let rebuild = *self.rebuild.borrow();
-        if let Some(rebuild) = rebuild {
-            self.rebuild.replace(None);
-            let theme = self.theme.borrow().clone();
-            match rebuild {
-                Rebuild::Interrupt => {
-                    self.animated_style
-                        .interrupt(new_style(&theme, &self.status));
-                }
-                Rebuild::Settle => {
-                    self.animated_style
-                        .settle_at(new_style(&theme, &self.status));
-                }
-            }
-            true
-        } else if self.status != status {
-            // Status changes means the style is likely changing.
+    pub fn needs_redraw(&mut self, status: Status) -> bool {
+        let animated_style = self.animated_style.borrow();
+        if self.status != status {
+            println!("Status changed");
             self.status = status;
-            self.animated_style
-                .interrupt(new_style(&self.theme.borrow(), &self.status));
+            // self.rebuild.replace(Some(Rebuild::Interrupt));
             true
-        } else if self.animated_style.has_energy() {
-            // Request a redraw the spring still has energy remaining.
-            true
+        } else if let Some(animated_style) = animated_style.as_ref() {
+            println!("Has energy: {}", animated_style.has_energy());
+            animated_style.has_energy()
         } else {
+            // No animated style yet.
+            println!("No need to redraw");
             false
         }
     }
@@ -225,31 +206,37 @@ where
     /// Update the animated style with the current time.
     /// Call this for `RedrawRequested` events.
     pub fn tick(&mut self, now: Instant) {
-        self.animated_style.tick(now);
+        let mut animated_style = self.animated_style.borrow_mut();
+        if let Some(animated_style) = animated_style.as_mut() {
+            println!("Tick");
+            animated_style.tick(now);
+        }
     }
 
     /// Gets the current style to use in a widget's `draw` function, using interior mutability to
     /// update the style and theme as necessary.
-    pub fn current_style(
-        &self,
-        theme: &Theme,
-        new_style: impl Fn(&Theme, &Status) -> Style,
-    ) -> &Style {
-        // Ensure the theme is always up-to-date.
-        if *self.theme.borrow() != *theme {
-            self.rebuild.replace(Some(Rebuild::Settle));
-            self.theme.replace(theme.clone());
-        }
-
+    pub fn current_style(&self, new_style: impl Fn(&Status) -> Style) -> Style {
         // Update the latest style if it has changed and indicate a redraw is needed.
-        let new_style = new_style(theme, &self.status);
-        if new_style != *self.style.borrow() {
-            if self.rebuild.borrow().is_none() {
-                self.rebuild.replace(Some(Rebuild::Interrupt));
-            }
-            self.style.replace(new_style.clone());
-        }
+        let new_style = new_style(&self.status);
 
-        self.animated_style.value()
+        let mut animated_style_ref = self.animated_style.borrow_mut();
+        if let Some(animated_style) = animated_style_ref.as_mut() {
+            if *animated_style.target() != new_style {
+                println!("Interrupting with new style");
+                animated_style.interrupt(new_style);
+            } else {
+                // Target style matches new style already.
+                println!("Target style matches new style");
+            }
+            animated_style.value().clone()
+        } else {
+            // Create a new animated style if one doesn't exist.
+            println!("Style doesn't exist yet");
+            let animated_style = Spring::new(new_style.clone())
+                .with_motion(self.motion)
+                .with_target(new_style.clone());
+            animated_style_ref.replace(animated_style);
+            new_style
+        }
     }
 }
