@@ -3,4 +3,4 @@ resolver = "2"
 members = ["iced_anim", "iced_anim_derive", "examples"]
 
 [workspace.dependencies]
-iced = { version = "0.13", features = ["advanced"] }
+iced = { version = "0.13", features = ["advanced", "svg"] }

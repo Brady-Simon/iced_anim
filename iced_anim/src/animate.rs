@@ -563,6 +563,20 @@ impl Animate for iced::widget::button::Style {
     }
 }
 
+impl Animate for iced::widget::svg::Style {
+    fn components() -> usize {
+        Option::<iced::Color>::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        self.color.distance_to(&end.color)
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.color.update(components);
+    }
+}
+
 impl<T1, T2> Animate for (T1, T2)
 where
     T1: Animate,
