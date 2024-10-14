@@ -5,12 +5,10 @@
 //! have been fitted to include animations by default.
 //!
 //! > Note: this module is only available when the `widgets` feature is enabled.
-mod animated_state;
+pub mod animated_state;
 pub mod button;
-pub mod checkbox;
 pub mod svg;
 
 pub use animated_state::AnimatedState;
 pub use button::{button, Button};
-pub use checkbox::{checkbox, Checkbox};
 pub use svg::{svg, Svg};

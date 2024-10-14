@@ -2,10 +2,7 @@ use std::{f32::consts::PI, sync::LazyLock, time::Duration};
 
 use iced::{
     gradient::{ColorStop, Linear},
-    widget::{
-        button::{danger, primary, Status},
-        column, container, row, text,
-    },
+    widget::{checkbox, column, container, row, text},
     Alignment::Center,
     Background, Border, Color, Element, Gradient,
     Length::Fill,
@@ -13,7 +10,7 @@ use iced::{
 };
 
 use iced_anim::{
-    widget::{button, checkbox},
+    widget::button::{button, danger, primary, Status},
     SpringMotion,
 };
 
