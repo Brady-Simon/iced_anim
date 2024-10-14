@@ -36,9 +36,9 @@ where
     motion: SpringMotion,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-struct State<Theme> {
-    animated_state: AnimatedState<Status, Theme, Style>,
+#[derive(Debug)]
+struct State {
+    animated_state: AnimatedState<Status, Style>,
 }
 
 impl<'a, Theme> Svg<'a, Theme>
@@ -150,19 +150,16 @@ where
 impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Svg<'a, Theme>
 where
     Renderer: iced::advanced::svg::Renderer,
-    Theme: 'static + Catalog + Default + Clone + PartialEq,
+    Theme: Catalog,
 {
     fn tag(&self) -> tree::Tag {
-        tree::Tag::of::<State<Theme>>()
+        tree::Tag::of::<State>()
     }
 
     fn state(&self) -> tree::State {
-        let theme = <Theme as Default>::default();
         let status = self.get_initial_status();
-        let style = theme.style(&self.class, status);
-        // Initialize the state with the current style.
-        let state = State::<Theme> {
-            animated_state: AnimatedState::new(status, theme, style).with_motion(self.motion),
+        let state = State {
+            animated_state: AnimatedState::new(status, self.motion),
         };
 
         tree::State::new(state)
@@ -170,12 +167,8 @@ where
 
     fn diff(&self, tree: &mut Tree) {
         // If the style changes from outside, then immediately update the style.
-        let state = tree.state.downcast_mut::<State<Theme>>();
-        let new_style = state
-            .animated_state
-            .theme()
-            .style(&self.class, *state.animated_state.status());
-        state.animated_state.diff(self.motion, new_style);
+        let state = tree.state.downcast_mut::<State>();
+        state.animated_state.diff(self.motion);
     }
 
     fn size(&self) -> Size<Length> {
@@ -254,10 +247,10 @@ where
         };
 
         let drawing_bounds = Rectangle::new(position, final_size);
-        let state = tree.state.downcast_ref::<State<Theme>>();
+        let state = tree.state.downcast_ref::<State>();
         let style = state
             .animated_state
-            .current_style(theme, |theme, status| theme.style(&self.class, *status));
+            .current_style(|status| theme.style(&self.class, *status));
 
         let render = |renderer: &mut Renderer| {
             renderer.draw_svg(
@@ -290,11 +283,9 @@ where
         _viewport: &Rectangle,
     ) -> iced::advanced::graphics::core::event::Status {
         // Redraw anytime the status changes and would trigger a style change.
-        let state = tree.state.downcast_mut::<State<Theme>>();
+        let state = tree.state.downcast_mut::<State>();
         let status = self.get_status(cursor, layout);
-        let needs_redraw = state
-            .animated_state
-            .needs_redraw(status, |theme, status| theme.style(&self.class, *status));
+        let needs_redraw = state.animated_state.needs_redraw(status);
 
         if needs_redraw {
             shell.request_redraw(window::RedrawRequest::NextFrame);
@@ -310,7 +301,7 @@ where
 
 impl<'a, Message, Theme, Renderer> From<Svg<'a, Theme>> for Element<'a, Message, Theme, Renderer>
 where
-    Theme: 'static + Catalog + Default + Clone + PartialEq,
+    Theme: Catalog + 'a,
     Renderer: svg::Renderer + 'a,
 {
     fn from(icon: Svg<'a, Theme>) -> Element<'a, Message, Theme, Renderer> {
@@ -323,7 +314,7 @@ where
 /// Svg widgets display vector graphics in your application.
 pub fn svg<'a, Theme>(handle: impl Into<Handle>) -> Svg<'a, Theme>
 where
-    Theme: 'static + Catalog + Default + Clone + PartialEq,
+    Theme: Catalog,
 {
     Svg::new(handle)
 }

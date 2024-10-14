@@ -51,7 +51,7 @@ impl<'a, Message: Clone> OnPress<'a, Message> {
 impl<'a, Message, Theme, Renderer> Button<'a, Message, Theme, Renderer>
 where
     Renderer: iced::advanced::Renderer,
-    Theme: 'static + Catalog,
+    Theme: Catalog,
 {
     /// Creates a new [`Button`] with the given content.
     pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
@@ -175,7 +175,7 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 struct State {
     is_pressed: bool,
     animated_state: AnimatedState<Status, Style>,
@@ -186,7 +186,7 @@ impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
 where
     Message: 'a + Clone,
     Renderer: 'a + iced::advanced::Renderer,
-    Theme: 'static + Catalog + Default + Clone + PartialEq,
+    Theme: Catalog,
 {
     fn tag(&self) -> tree::Tag {
         tree::Tag::of::<State>()
@@ -421,7 +421,7 @@ impl<'a, Message, Theme, Renderer> From<Button<'a, Message, Theme, Renderer>>
     for Element<'a, Message, Theme, Renderer>
 where
     Message: Clone + 'a,
-    Theme: 'static + Catalog + Default + Clone + PartialEq,
+    Theme: Catalog + 'a,
     Renderer: iced::advanced::Renderer + 'a,
 {
     fn from(button: Button<'a, Message, Theme, Renderer>) -> Self {
@@ -441,7 +441,7 @@ pub fn button<'a, Message, Theme, Renderer>(
     content: impl Into<Element<'a, Message, Theme, Renderer>>,
 ) -> Button<'a, Message, Theme, Renderer>
 where
-    Theme: 'static + Catalog + Default + Clone + PartialEq,
+    Theme: Catalog,
     Renderer: iced::advanced::Renderer,
 {
     Button::new(content)
