@@ -2,7 +2,9 @@
 //!
 //! The [`AnimatedState`] internally keeps track of a widget's status and style, and then
 //! updates the animated style based on these values. This struct can be built into a widget's
-//! internal state and used to manage style animations.
+//! internal state and used to manage style animations. It uses interior mutability to lazily
+//! update the animated style when the widget is drawn, and requests redraws when the widget status
+//! changes in response to some event.
 //!
 //! There are a few steps to using this struct:
 //!
