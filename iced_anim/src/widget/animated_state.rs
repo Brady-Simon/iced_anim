@@ -57,7 +57,7 @@
 //!    has changed externally.
 //!    ```ignore
 //!    fn diff(&self, tree: &mut Tree) {
-//!        // Diff the animated state with a potentially new style.
+//!        // Diff the animated state with a potentially new motion.
 //!        let state = tree.state.downcast_mut::<State>();
 //!        state.animated_state.diff(self.motion);
 //!        // Diff the rest of your widget state as necessary.
@@ -67,7 +67,8 @@
 //! 6. Update [`iced::advanced::Widget::draw`] to get the current style from the animated state
 //!    instead of manually calculating the style on each draw. Use [`AnimatedState::current_style`]
 //!    and pass in a callback to generate the style based on the theme and status, and it'll return
-//!    a reference to the latest animated style.
+//!    a reference to the latest animated style. The inner animated style will be updated if the
+//!    closure produces a style different from the current target.
 //! 7. Update [`iced::advanced::Widget::on_event`] to call [`AnimatedState::needs_redraw`] to
 //!    determine if the widget needs to redraw. If a redraw is needed, then use the shell to
 //!    request a redraw on the next frame. This may vary based on how your widget, but it will
