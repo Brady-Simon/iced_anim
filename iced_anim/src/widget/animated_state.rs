@@ -86,7 +86,10 @@
 //! 8. Finally, ensure your widget handles [`iced::window::Event::RedrawRequested`] events by
 //!    calling [`AnimatedState::tick`] to update the animated style with the current time. This
 //!    is how the animated state can update the style over time.
-use std::{cell::RefCell, time::Instant};
+use std::{
+    cell::{Ref, RefCell},
+    time::Instant,
+};
 
 use crate::{Animate, Spring, SpringMotion};
 
@@ -158,25 +161,36 @@ where
         }
     }
 
-    /// Gets the current style to use in a widget's `draw` function,
-    /// using interior mutability to update the style.
-    pub fn current_style(&self, new_style: impl Fn(&Status) -> Style) -> Style {
+    /// Gets a reference to the animated style to use in a widget's `draw` function,
+    /// using interior mutability to update the animation as necessary.
+    ///
+    /// The animation target will change if the `new_style` function returns a different style
+    /// than the current target.
+    pub fn current_style(&self, new_style: impl Fn(&Status) -> Style) -> Ref<'_, Style> {
         // Update the latest style if it has changed and indicate a redraw is needed.
         let new_style = new_style(&self.status);
 
-        let mut animated_style_ref = self.animated_style.borrow_mut();
-        if let Some(animated_style) = animated_style_ref.as_mut() {
-            if animated_style.target() != &new_style {
-                animated_style.interrupt(new_style);
+        // Scoping the mutable borrow of the animated style.
+        {
+            let mut animated_style_ref = self.animated_style.borrow_mut();
+            if let Some(animated_style) = animated_style_ref.as_mut() {
+                if animated_style.target() != &new_style {
+                    animated_style.interrupt(new_style);
+                }
+            } else {
+                // Create a new animated style if one doesn't exist.
+                let animated_style = Spring::new(new_style.clone())
+                    .with_motion(self.motion)
+                    .with_target(new_style);
+                animated_style_ref.replace(animated_style);
             }
-            animated_style.value().clone()
-        } else {
-            // Create a new animated style if one doesn't exist.
-            let animated_style = Spring::new(new_style.clone())
-                .with_motion(self.motion)
-                .with_target(new_style.clone());
-            animated_style_ref.replace(animated_style);
-            new_style
         }
+
+        Ref::map(self.animated_style.borrow(), |style| {
+            style
+                .as_ref()
+                .expect("Animated style should have been lazily created")
+                .value()
+        })
     }
 }
