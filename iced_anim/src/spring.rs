@@ -146,8 +146,7 @@ where
 
         // End the animation if the spring is near the target wiht low velocity.
         if self.is_near_end() {
-            self.value = self.target.clone();
-            self.velocity = vec![0.0; T::components()];
+            self.settle();
             return;
         }
 
@@ -194,24 +193,33 @@ where
         self.velocity = vec![0.0; T::components()];
     }
 
+    /// Makes the spring value and target immediately settle at the given `value`.
+    pub fn settle_at(&mut self, value: T) {
+        self.value = value.clone();
+        self.target = value;
+        self.velocity = vec![0.0; T::components()];
+    }
+
     /// Whether the spring is near the end of its animation.
     ///
     /// The animation will be stopped when the spring is near the target and has low velocity
     /// to avoid needlessly animating imperceptible changes.
     fn is_near_end(&self) -> bool {
-        self.value
-            .distance_to(&self.target)
-            .iter()
-            .zip(&self.initial_distance)
-            .zip(&self.velocity)
-            .all(|((d, i), v)| match i {
-                0.0 => true,
-                _ => {
-                    let d_percent = (d / i).abs();
-                    let v_percent = (v / i).abs();
-                    d_percent <= ESPILON && v_percent <= ESPILON
-                }
-            })
+        self.motion.duration().is_zero()
+            || self
+                .value
+                .distance_to(&self.target)
+                .iter()
+                .zip(&self.initial_distance)
+                .zip(&self.velocity)
+                .all(|((d, i), v)| match i {
+                    0.0 => true,
+                    _ => {
+                        let d_percent = (d / i).abs();
+                        let v_percent = (v / i).abs();
+                        d_percent <= ESPILON && v_percent <= ESPILON
+                    }
+                })
     }
 }
 
@@ -226,6 +234,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
 
     /// Initial springs should have no energy.
@@ -247,6 +257,17 @@ mod tests {
     fn has_energy_when_velocity_is_nonzero() {
         let spring = Spring::new(0.0).with_velocity(vec![1.0]);
         assert!(spring.has_energy());
+    }
+
+    /// [`Spring::settle_at`] should set the spring's value and target to the given value
+    /// and bring all velocity components to zero.
+    #[test]
+    fn settle_at() {
+        let mut spring = Spring::new(0.0).with_target(3.0);
+        spring.settle_at(5.0);
+        assert_eq!(spring.value(), &5.0);
+        assert_eq!(spring.target(), &5.0);
+        assert_eq!(spring.velocity, vec![0.0]);
     }
 
     #[test]
@@ -320,5 +341,29 @@ mod tests {
     fn default_impl() {
         let spring = Spring::<f32>::default();
         assert_eq!(spring.value(), &f32::default());
+    }
+
+    /// A response of zero should imply the spring is near its target.
+    #[test]
+    fn is_near_end_with_zero_duration() {
+        let spring = Spring::new(0.0)
+            .with_target(1.0)
+            .with_motion(SpringMotion::Custom {
+                response: Duration::ZERO,
+                damping: 0.5,
+            });
+        assert!(spring.is_near_end());
+    }
+
+    /// A spring with a response of zero should settle immediately.
+    #[test]
+    fn update_zero_response() {
+        let mut spring = Spring::new(0.0).with_target(1.0);
+        spring.set_motion(SpringMotion::Custom {
+            response: Duration::ZERO,
+            damping: 0.5,
+        });
+        spring.update(SpringEvent::Tick(Instant::now()));
+        assert_eq!(spring.value(), spring.target());
     }
 }
