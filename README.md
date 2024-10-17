@@ -14,6 +14,19 @@ value from props and allows you to emit a message to update the value.
 Both widgets animate values using spring physics instead of easing functions to
 allow for more natural and interruptible animations.
 
+### Animated widgets
+
+A subset of the standard `iced` widgets are exported under a `widgets` feature
+flag. You can use these as drop-in replacements for the existing widgets:
+
+```rust
+use iced::widget::text;
+use iced_anim::widget::button;
+
+let my_button = button(text("Animated button"))
+    .on_press(Message::DoSomething);
+```
+
 ### `AnimationBuilder` widget
 
 The `AnimationBuilder` widget takes some sort of value that implements 

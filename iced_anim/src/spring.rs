@@ -1,5 +1,8 @@
 //! Spring physics to enable natural and interactive animations.
-use std::{fmt::Debug, time::Instant};
+use std::{
+    fmt::Debug,
+    time::{Duration, Instant},
+};
 
 use crate::{spring_event::SpringEvent, Animate, SpringMotion};
 
@@ -10,10 +13,21 @@ use crate::{spring_event::SpringEvent, Animate, SpringMotion};
 /// needlessly when the target is effectively reached.
 pub const ESPILON: f32 = 0.005;
 
+/// The maximum duration between spring updates that is allowed before clamping the time
+/// to avoid large jumps in the spring's value.
+///
+/// This is particularly noticeable when the window loses focus and the app stops receiving
+/// redraws, causing the next update to have a much larger duration than the last one.
+pub const MAX_DURATION: Duration = Duration::from_millis(100);
+
 /// A representation of a spring animation that interpolates between values.
 ///
 /// You can use this alongside the `Animation` widget to animate changes to your UI
 /// by storing the spring in your state and updating it with events.
+///
+/// As this is designed for GUI animations and not general-purpose physics simulations,
+/// it includes some features targeted toward avoiding UI issues like overshooting.
+/// See [`MAX_DURATION`] and [`ESPILON`] for examples of this.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spring<T> {
@@ -54,7 +68,7 @@ impl<T> Spring<T> {
         &self.target
     }
 
-    /// Returns the spring's current `SpringMotion`.
+    /// Returns the spring's current [`SpringMotion`].
     pub fn motion(&self) -> SpringMotion {
         self.motion
     }
@@ -80,7 +94,7 @@ impl<T> Spring<T>
 where
     T: Animate,
 {
-    /// Creates a new `Spring` with the initial `value`.
+    /// Creates a new [`Spring`] with the initial `value`.
     ///
     /// Use the builder methods to customize the spring's behavior and target.
     pub fn new(value: T) -> Self {
@@ -109,8 +123,8 @@ where
 
     /// Updates the spring based on the given `event`.
     ///
-    /// You can update either the current value by passing `SpringEvent::Tick`
-    /// or change the target value by passing `SpringEvent::Target`.
+    /// You can update either the current value by passing [`SpringEvent::Tick`]
+    /// or change the target value by passing [`SpringEvent::Target`].
     ///
     /// ```rust
     /// # use iced_anim::{Spring, SpringEvent};
@@ -141,7 +155,7 @@ where
             return;
         }
 
-        let dt = now.duration_since(self.last_update);
+        let dt = now.duration_since(self.last_update).min(MAX_DURATION);
         self.last_update = now;
 
         // End the animation if the spring is near the target wiht low velocity.
@@ -237,6 +251,12 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+
+    /// The maximum duration between spring updates should be 100ms.
+    #[test]
+    fn max_duration_time() {
+        assert_eq!(MAX_DURATION, Duration::from_millis(100));
+    }
 
     /// Initial springs should have no energy.
     #[test]
@@ -336,7 +356,7 @@ mod tests {
         assert_eq!(spring.velocity, vec![0.0]);
     }
 
-    /// Springs should implement `Default` if `T` does.
+    /// Springs should implement [`Default`] if `T` does.
     #[test]
     fn default_impl() {
         let spring = Spring::<f32>::default();
