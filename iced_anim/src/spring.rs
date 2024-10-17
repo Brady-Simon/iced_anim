@@ -68,7 +68,7 @@ impl<T> Spring<T> {
         &self.target
     }
 
-    /// Returns the spring's current `SpringMotion`.
+    /// Returns the spring's current [`SpringMotion`].
     pub fn motion(&self) -> SpringMotion {
         self.motion
     }
@@ -94,7 +94,7 @@ impl<T> Spring<T>
 where
     T: Animate,
 {
-    /// Creates a new `Spring` with the initial `value`.
+    /// Creates a new [`Spring`] with the initial `value`.
     ///
     /// Use the builder methods to customize the spring's behavior and target.
     pub fn new(value: T) -> Self {
@@ -252,6 +252,12 @@ mod tests {
 
     use super::*;
 
+    /// The maximum duration between spring updates should be 100ms.
+    #[test]
+    fn max_duration_time() {
+        assert_eq!(MAX_DURATION, Duration::from_millis(100));
+    }
+
     /// Initial springs should have no energy.
     #[test]
     fn new_springs_have_no_energy() {
@@ -350,7 +356,7 @@ mod tests {
         assert_eq!(spring.velocity, vec![0.0]);
     }
 
-    /// Springs should implement `Default` if `T` does.
+    /// Springs should implement [`Default`] if `T` does.
     #[test]
     fn default_impl() {
         let spring = Spring::<f32>::default();
