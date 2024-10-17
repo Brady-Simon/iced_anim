@@ -9,9 +9,29 @@
 //! state is always up-to-date with the latest value. Refer to those widget modules for documentation
 //! and the `examples` directory for examples on how to use them.
 //!
-//! You can animate anything that implements `Animate`. A handful of common types already
-//! implement `Animate` like `f32`, `iced::Color`, and `iced::Theme`, with more to come in the
-//! future. You can also derive `Animate` on your own types to animate them as well.
+//! ## Animated widgets
+//!
+//! A subset of the standard `iced` widgets are exported under a `widgets` feature
+//! flag. You can use these as drop-in replacements for the existing widgets:
+//!
+//! ```rust
+//! # #[derive(Clone)] enum Message { DoSomething }
+//! use iced::{Element, widget::text};
+//! use iced_anim::widget::button;
+//!
+//! fn fancy_button<'a>() -> Element<'a, Message> {
+//!     button(text("Animated button"))
+//!         .on_press(Message::DoSomething)
+//!         .into()
+//! }
+//! ```
+//!
+//! ## Animating types
+//!
+//! You can animate anything that implements [`Animate`]. A handful of common types already
+//! implement [`Animate`] like [`f32`], [`iced::Color`], and [`iced::Theme`], with more to come
+//! in the future. You can also derive [`Animate`] on your own types to animate them as well
+//! by enabling the `derive` feature flag and adding `#[derive(Animate)]` to your type:
 //!
 //! ```rust
 //! use iced_anim::Animate;
@@ -24,13 +44,13 @@
 //! }
 //! ```
 //!
-//! # Controlling the spring motion
+//! ## Controlling the spring motion
 //!
-//! The spring motion of an `AnimationBuilder` can be customized. There are a few
-//! defaults like `SpringMotion::Smooth` and `SpringMotion::Bouncy`, but you can
-//! provide a custom response and damping fraction with `SpringMotion::Custom`.
+//! The spring motion of an [`AnimationBuilder`] can be customized. There are a few
+//! defaults like [`SpringMotion::Smooth`] and [`SpringMotion::Bouncy`], but you can
+//! provide a custom response and damping fraction with [`SpringMotion::Custom`].
 //!
-//! # Supported Iced versions
+//! ## Supported Iced versions
 //!
 //! This crate supports Iced 0.13 and newer.
 pub mod animate;

@@ -15,11 +15,6 @@
 //!   only be an [`iced::Color`] and not an [`iced::Gradient`]. Use default or empty values like
 //!   [`iced::Color::TRANSPARENT`] in place of [`None`] to ensure optional values are animated,
 //!   since [`None`] counts as a different variant.
-//! - Animations may appear jumpy if the user alt-tabs during an animation in a way that causes the
-//!   app to stop receiving redraws. This is a side-effect of animations not yet handling the
-//!   window losing focus, so the instant after the user alt-tabs back to the app will be much
-//!   larger than the last time the app was drawn. This seems solvable, but effort has been going
-//!   to other parts of the library for now.
 //! - You can disable animations by passing a [`SpringMotion`] with a duration of `0.0` to the
 //!   `motion` method, but there may be a more ergonomic way to do this in the future.
 pub mod animated_state;
