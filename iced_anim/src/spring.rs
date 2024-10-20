@@ -18,7 +18,7 @@ pub const ESPILON: f32 = 0.005;
 ///
 /// This is particularly noticeable when the window loses focus and the app stops receiving
 /// redraws, causing the next update to have a much larger duration than the last one.
-pub const MAX_DURATION: Duration = Duration::from_millis(100);
+pub const MAX_DURATION: Duration = Duration::from_millis(33);
 
 /// A representation of a spring animation that interpolates between values.
 ///
@@ -252,10 +252,10 @@ mod tests {
 
     use super::*;
 
-    /// The maximum duration between spring updates should be 100ms.
+    /// The maximum duration between spring updates should be 33ms, or 1 frame at 30fps.
     #[test]
     fn max_duration_time() {
-        assert_eq!(MAX_DURATION, Duration::from_millis(100));
+        assert_eq!(MAX_DURATION, Duration::from_millis(33));
     }
 
     /// Initial springs should have no energy.
