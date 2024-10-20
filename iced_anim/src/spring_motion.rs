@@ -18,7 +18,7 @@ pub enum SpringMotion {
         /// A value of zero requests an infinitely-stiff spring, suitable for driving
         /// interactive animations.
         response: Duration,
-        /// The fractional  amount of drag applied needed to produce critical damping.
+        /// The fractional amount of drag applied needed to produce critical damping.
         /// A value of 1 will smoothly decelerate the spring to its target, while values
         /// less than 1 will cause the spring to oscillate around the target more before
         /// coming to a stop.
@@ -27,6 +27,22 @@ pub enum SpringMotion {
 }
 
 impl SpringMotion {
+    /// Create a custom spring motion with the given response `duration`.
+    pub fn with_duration(self, duration: Duration) -> Self {
+        Self::Custom {
+            response: duration,
+            damping: self.damping(),
+        }
+    }
+
+    /// Create a custom spring motion with the given `damping` fraction.
+    pub fn with_damping(self, damping: f32) -> Self {
+        Self::Custom {
+            response: self.duration(),
+            damping,
+        }
+    }
+
     /// The estimated duration of how long the spring animation.
     /// This is used in the spring physics calculations and does not represent
     /// a strict duration for the animation.
@@ -37,6 +53,7 @@ impl SpringMotion {
         }
     }
 
+    /// The fractional amount of drag applied needed to produce critical damping.
     pub fn damping(&self) -> f32 {
         match self {
             Self::Bouncy => 0.7,
@@ -46,6 +63,7 @@ impl SpringMotion {
         }
     }
 
+    /// The amount of stiffness applied to the spring, which varies based on the `duration`.
     pub fn applied_stiffness(&self) -> f32 {
         let duration_fraction = self.duration().as_secs_f32();
         39.478_416 / duration_fraction.powi(2)
@@ -77,6 +95,30 @@ mod tests {
     #[test]
     fn default_is_smooth() {
         assert_eq!(SpringMotion::default(), SpringMotion::Smooth);
+    }
+
+    #[test]
+    fn with_duration() {
+        let motion = SpringMotion::Smooth.with_duration(Duration::from_millis(300));
+        assert_eq!(
+            motion,
+            SpringMotion::Custom {
+                response: Duration::from_millis(300),
+                damping: SpringMotion::Smooth.damping()
+            }
+        );
+    }
+
+    #[test]
+    fn with_damping() {
+        let motion = SpringMotion::Smooth.with_damping(0.5);
+        assert_eq!(
+            motion,
+            SpringMotion::Custom {
+                response: SpringMotion::Smooth.duration(),
+                damping: 0.5
+            }
+        );
     }
 
     #[test]
