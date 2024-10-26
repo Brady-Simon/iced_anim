@@ -13,7 +13,9 @@
 //!
 //! 1. Implement `get_initial_status` and `get_status` functions for your widget. You'll use these
 //!    to give the initial and current status to the [`AnimatedState`] so it can properly update
-//!    the animated style. For example, a button might have an initial status fn look like this:
+//!    the animated style. You don't _technically_ need dedicated functions for these, but it can
+//!    help keep your Widget implementations cleaner. For example, a button might have an initial
+//!    status fn look like this:
 //!    ```no_run
 //!    # struct Button { on_press: Option<fn()> }
 //!    # enum Status { Active, Disabled }
