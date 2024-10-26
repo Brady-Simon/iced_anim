@@ -74,6 +74,14 @@ impl SpringMotion {
         let duration = self.duration().as_secs_f32();
         self.damping() * 12.566_371 / duration
     }
+
+    /// Creates a motion that causes all animations to transition instantly.
+    pub fn instant() -> Self {
+        Self::Custom {
+            response: Duration::ZERO,
+            damping: Self::default().damping(),
+        }
+    }
 }
 
 impl Display for SpringMotion {
@@ -183,5 +191,13 @@ mod tests {
         };
         assert_eq!(motion.applied_damping().trunc(), 37.0);
         assert_eq!(motion.applied_stiffness().trunc(), 631.0);
+    }
+
+    /// [SpringMotion::instant] should have zero duration and the default damping.
+    #[test]
+    fn instant() {
+        let motion = SpringMotion::instant();
+        assert_eq!(motion.duration(), Duration::ZERO);
+        assert_eq!(motion.damping(), SpringMotion::default().damping());
     }
 }
