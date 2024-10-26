@@ -6,6 +6,9 @@
 //! update the animated style when the widget is drawn, and requests redraws when the widget status
 //! changes in response to some event.
 //!
+//! This requires that that your `Style` implement [`Animate`] - you can normally derive this for
+//! simple structs.
+//!
 //! There are a few steps to using this struct:
 //!
 //! 1. Implement `get_initial_status` and `get_status` functions for your widget. You'll use these
