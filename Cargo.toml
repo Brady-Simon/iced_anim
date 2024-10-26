@@ -4,4 +4,3 @@ members = ["iced_anim", "iced_anim_derive", "examples"]
 
 [workspace.dependencies]
 iced = { version = "0.13", features = ["advanced", "svg"] }
-iced_core = { version = "0.13", features = ["advanced"] }

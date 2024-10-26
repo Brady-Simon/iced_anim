@@ -38,7 +38,7 @@
 //! You can also animate multiple values at once by using a tuple up to length of four:
 //!
 //! ```rust
-//! # use iced::{Color, Element, widget::{text, container}};
+//! # use iced::{Color, widget::{text, container}};
 //! # use iced_anim::AnimationBuilder;
 //! # #[derive(Default)]
 //! # struct MyType {
@@ -48,7 +48,7 @@
 //! # #[derive(Clone)]
 //! # enum Message {}
 //! # impl MyType {
-//! #   fn view(&self) -> Element<Message> {
+//! #   fn view(&self) -> iced::Element<Message> {
 //! AnimationBuilder::new((self.size, self.color), |(size, color)| {
 //!     container(text(size as isize).color(color))
 //!         .center(size)
@@ -72,12 +72,17 @@
 //! Use the `Animation` widget if you need any of these properties.
 //!
 //! If these limitations apply to you, consider using the `Animation` widget instead.
-use crate::{animate::Animate, Spring, SpringMotion};
-use iced_core::{
-    event, layout,
-    widget::{tree, Tree},
-    Element, Length, Size, Widget,
+use iced::{
+    advanced::{
+        graphics::core::event,
+        layout,
+        widget::{tree, Tree},
+        Widget,
+    },
+    Element,
 };
+
+use crate::{animate::Animate, Spring, SpringMotion};
 
 /// A widget that implicitly animates a value anytime it changes.
 ///
@@ -152,7 +157,7 @@ where
     T: 'static + Animate,
     Message: Clone + 'a,
     Theme: 'a,
-    Renderer: iced_core::Renderer + 'a,
+    Renderer: iced::advanced::Renderer + 'a,
 {
     fn from(animation: AnimationBuilder<'a, T, Message, Theme, Renderer>) -> Self {
         Self::new(animation)
@@ -163,9 +168,9 @@ impl<'a, T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
     for AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
-    Renderer: iced_core::Renderer,
+    Renderer: iced::advanced::Renderer,
 {
-    fn size(&self) -> Size<Length> {
+    fn size(&self) -> iced::Size<iced::Length> {
         self.cached_element.as_widget().size()
     }
 
@@ -211,7 +216,7 @@ where
         state: &mut Tree,
         layout: layout::Layout<'_>,
         renderer: &Renderer,
-        operation: &mut dyn iced_core::widget::Operation<()>,
+        operation: &mut dyn iced::advanced::widget::Operation<()>,
     ) {
         self.cached_element.as_widget().operate(
             &mut state.children[0],
@@ -226,8 +231,8 @@ where
         tree: &'b mut Tree,
         layout: layout::Layout<'_>,
         renderer: &Renderer,
-        translation: iced_core::Vector,
-    ) -> Option<iced_core::overlay::Element<'b, Message, Theme, Renderer>> {
+        translation: iced::Vector,
+    ) -> Option<iced::advanced::overlay::Element<'b, Message, Theme, Renderer>> {
         self.cached_element.as_widget_mut().overlay(
             &mut tree.children[0],
             layout,
@@ -240,10 +245,10 @@ where
         &self,
         tree: &Tree,
         layout: layout::Layout<'_>,
-        cursor: iced_core::mouse::Cursor,
-        viewport: &iced_core::Rectangle,
+        cursor: iced::advanced::mouse::Cursor,
+        viewport: &iced::Rectangle,
         renderer: &Renderer,
-    ) -> iced_core::mouse::Interaction {
+    ) -> iced::advanced::mouse::Interaction {
         self.cached_element.as_widget().mouse_interaction(
             &tree.children[0],
             layout,
@@ -262,10 +267,10 @@ where
         tree: &Tree,
         renderer: &mut Renderer,
         theme: &Theme,
-        style: &iced_core::renderer::Style,
-        layout: iced_core::Layout<'_>,
-        cursor: iced_core::mouse::Cursor,
-        viewport: &iced_core::Rectangle,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::advanced::mouse::Cursor,
+        viewport: &iced::Rectangle,
     ) {
         self.cached_element.as_widget().draw(
             &tree.children[0],
@@ -281,13 +286,13 @@ where
     fn on_event(
         &mut self,
         tree: &mut Tree,
-        event: iced_core::Event,
-        layout: iced_core::Layout<'_>,
-        cursor: iced_core::mouse::Cursor,
+        event: iced::Event,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::advanced::mouse::Cursor,
         renderer: &Renderer,
-        clipboard: &mut dyn iced_core::Clipboard,
-        shell: &mut iced_core::Shell<'_, Message>,
-        viewport: &iced_core::Rectangle,
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut iced::advanced::Shell<'_, Message>,
+        viewport: &iced::Rectangle,
     ) -> event::Status {
         let status = self.cached_element.as_widget_mut().on_event(
             &mut tree.children[0],
@@ -300,7 +305,7 @@ where
             viewport,
         );
 
-        let iced_core::Event::Window(iced_core::window::Event::RedrawRequested(now)) = event else {
+        let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event else {
             return status;
         };
 
@@ -308,7 +313,7 @@ where
 
         // Request a redraw if the spring has remaining energy
         if spring.has_energy() {
-            shell.request_redraw(iced_core::window::RedrawRequest::NextFrame);
+            shell.request_redraw(iced::window::RedrawRequest::NextFrame);
             // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {
                 shell.invalidate_layout();

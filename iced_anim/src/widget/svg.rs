@@ -1,6 +1,6 @@
 //! Svg widgets display vector graphics in your application.
 use super::AnimatedState;
-use crate::{Animate, SpringMotion};
+use crate::SpringMotion;
 use iced::advanced::{
     layout, renderer,
     widget::{tree, Tree},
@@ -8,7 +8,7 @@ use iced::advanced::{
 use iced::{
     advanced::{svg, Layout, Widget},
     mouse::{self, Cursor},
-    window, Color, ContentFit, Element, Event, Length, Point, Rectangle, Rotation, Size, Vector,
+    window, ContentFit, Element, Event, Length, Point, Rectangle, Rotation, Size, Vector,
 };
 use std::path::PathBuf;
 
@@ -317,18 +317,4 @@ where
     Theme: Catalog,
 {
     Svg::new(handle)
-}
-
-impl Animate for iced::widget::svg::Style {
-    fn components() -> usize {
-        Option::<Color>::components()
-    }
-
-    fn distance_to(&self, end: &Self) -> Vec<f32> {
-        self.color.distance_to(&end.color)
-    }
-
-    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
-        self.color.update(components);
-    }
 }

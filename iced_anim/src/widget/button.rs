@@ -1,6 +1,6 @@
 //! An animated button that will automatically transition between different styles.
 use super::animated_state::AnimatedState;
-use crate::{Animate, SpringMotion};
+use crate::SpringMotion;
 use iced::{
     advanced::{
         layout, renderer,
@@ -445,54 +445,4 @@ where
     Renderer: iced::advanced::Renderer,
 {
     Button::new(content)
-}
-
-impl Animate for iced::widget::button::Style {
-    fn components() -> usize {
-        Option::<iced_core::Background>::components()
-            + iced_core::Color::components()
-            + iced_core::Border::components()
-            + iced_core::Shadow::components()
-    }
-
-    fn distance_to(&self, end: &Self) -> Vec<f32> {
-        [
-            self.background.distance_to(&end.background),
-            self.text_color.distance_to(&end.text_color),
-            self.border.distance_to(&end.border),
-            self.shadow.distance_to(&end.shadow),
-        ]
-        .concat()
-    }
-
-    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
-        self.background.update(components);
-        self.text_color.update(components);
-        self.border.update(components);
-        self.shadow.update(components);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn update_button_style() {
-        let style = iced::widget::button::Style {
-            background: Some(iced_core::Background::Color(iced_core::Color::BLACK)),
-            text_color: iced_core::Color::BLACK,
-            border: iced_core::Border::default(),
-            shadow: iced_core::Shadow::default(),
-        };
-        let target = iced::widget::button::Style {
-            background: Some(iced_core::Background::Color(iced_core::Color::WHITE)),
-            text_color: iced_core::Color::WHITE,
-            border: iced_core::Border::default().width(1.0),
-            shadow: iced_core::Shadow::default(),
-        };
-
-        let mut spring = crate::Spring::new(style);
-        spring.interrupt(target);
-        spring.tick(std::time::Instant::now());
-        assert_ne!(*spring.value(), style);
-    }
 }

@@ -43,9 +43,14 @@
 //!     }
 //! }
 //! ```
-use crate::{Animate, Spring, SpringEvent};
-use iced_core::{event, widget::Tree, Element, Length, Size, Widget};
 use std::time::Instant;
+
+use iced::{
+    advanced::{widget::Tree, Widget},
+    Element,
+};
+
+use crate::{Animate, Spring, SpringEvent};
 
 /// A widget that helps you animate a value over time from your state.
 /// This is useful for animating changes to a widget's appearance or layout
@@ -103,32 +108,32 @@ impl<'a, T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
 where
     T: 'static + Animate,
     Message: 'a + Clone,
-    Renderer: 'a + iced_core::Renderer,
+    Renderer: 'a + iced::advanced::Renderer,
 {
-    fn size(&self) -> Size<Length> {
+    fn size(&self) -> iced::Size<iced::Length> {
         self.content.as_widget().size()
     }
 
-    fn size_hint(&self) -> Size<Length> {
+    fn size_hint(&self) -> iced::Size<iced::Length> {
         self.content.as_widget().size_hint()
     }
 
-    fn children(&self) -> Vec<Tree> {
+    fn children(&self) -> Vec<iced::advanced::widget::Tree> {
         vec![Tree::new(&self.content)]
     }
 
-    fn diff(&self, tree: &mut Tree) {
+    fn diff(&self, tree: &mut iced::advanced::widget::Tree) {
         tree.diff_children(std::slice::from_ref(&self.content));
     }
 
     fn mouse_interaction(
         &self,
-        tree: &Tree,
-        layout: iced_core::Layout<'_>,
-        cursor: iced_core::mouse::Cursor,
-        viewport: &iced_core::Rectangle,
+        tree: &iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::advanced::mouse::Cursor,
+        viewport: &iced::Rectangle,
         renderer: &Renderer,
-    ) -> iced_core::mouse::Interaction {
+    ) -> iced::advanced::mouse::Interaction {
         self.content.as_widget().mouse_interaction(
             &tree.children[0],
             layout,
@@ -140,27 +145,27 @@ where
 
     fn operate(
         &self,
-        state: &mut iced_core::widget::Tree,
-        layout: iced_core::Layout<'_>,
+        state: &mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
         renderer: &Renderer,
-        operation: &mut dyn iced_core::widget::Operation<()>,
+        operation: &mut dyn iced::advanced::widget::Operation<()>,
     ) {
         self.content
             .as_widget()
             .operate(&mut state.children[0], layout, renderer, operation);
     }
 
-    fn state(&self) -> iced_core::widget::tree::State {
-        iced_core::widget::tree::State::None
+    fn state(&self) -> iced::advanced::widget::tree::State {
+        iced::advanced::widget::tree::State::None
     }
 
     fn overlay<'b>(
         &'b mut self,
-        tree: &'b mut iced_core::widget::Tree,
-        layout: iced_core::Layout<'_>,
+        tree: &'b mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
         renderer: &Renderer,
-        translation: iced_core::Vector,
-    ) -> Option<iced_core::overlay::Element<'b, Message, Theme, Renderer>> {
+        translation: iced::Vector,
+    ) -> Option<iced::advanced::overlay::Element<'b, Message, Theme, Renderer>> {
         self.content
             .as_widget_mut()
             .overlay(&mut tree.children[0], layout, renderer, translation)
@@ -168,10 +173,10 @@ where
 
     fn layout(
         &self,
-        tree: &mut iced_core::widget::Tree,
+        tree: &mut iced::advanced::widget::Tree,
         renderer: &Renderer,
-        limits: &iced_core::layout::Limits,
-    ) -> iced_core::layout::Node {
+        limits: &iced::advanced::layout::Limits,
+    ) -> iced::advanced::layout::Node {
         self.content
             .as_widget()
             .layout(&mut tree.children[0], renderer, limits)
@@ -179,13 +184,13 @@ where
 
     fn draw(
         &self,
-        tree: &iced_core::widget::Tree,
+        tree: &iced::advanced::widget::Tree,
         renderer: &mut Renderer,
         theme: &Theme,
-        style: &iced_core::renderer::Style,
-        layout: iced_core::Layout<'_>,
-        cursor: iced_core::mouse::Cursor,
-        viewport: &iced_core::Rectangle,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::advanced::mouse::Cursor,
+        viewport: &iced::Rectangle,
     ) {
         self.content.as_widget().draw(
             &tree.children[0],
@@ -200,15 +205,15 @@ where
 
     fn on_event(
         &mut self,
-        tree: &mut iced_core::widget::Tree,
-        event: iced_core::Event,
-        layout: iced_core::Layout<'_>,
-        cursor: iced_core::mouse::Cursor,
+        tree: &mut iced::advanced::widget::Tree,
+        event: iced::Event,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::advanced::mouse::Cursor,
         renderer: &Renderer,
-        clipboard: &mut dyn iced_core::Clipboard,
-        shell: &mut iced_core::Shell<'_, Message>,
-        viewport: &iced_core::Rectangle,
-    ) -> event::Status {
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut iced::advanced::Shell<'_, Message>,
+        viewport: &iced::Rectangle,
+    ) -> iced::advanced::graphics::core::event::Status {
         let status = self.content.as_widget_mut().on_event(
             &mut tree.children[0],
             event.clone(),
@@ -244,7 +249,7 @@ where
     T: 'static + Animate,
     Message: 'a + Clone,
     Theme: 'a,
-    Renderer: iced_core::Renderer + 'a,
+    Renderer: iced::advanced::Renderer + 'a,
 {
     fn from(animation: Animation<'a, T, Message, Theme, Renderer>) -> Self {
         Self::new(animation)
