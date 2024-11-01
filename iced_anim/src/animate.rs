@@ -382,6 +382,54 @@ where
     }
 }
 
+impl<T> Animate for iced::Size<T>
+where
+    T: Animate,
+{
+    fn components() -> usize {
+        2 * T::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.width.distance_to(&end.width),
+            self.height.distance_to(&end.height),
+        ]
+        .concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.width.update(components);
+        self.height.update(components);
+    }
+}
+
+impl<T> Animate for iced::Rectangle<T>
+where
+    T: Animate,
+{
+    fn components() -> usize {
+        4 * T::components()
+    }
+
+    fn distance_to(&self, end: &Self) -> Vec<f32> {
+        [
+            self.x.distance_to(&end.x),
+            self.y.distance_to(&end.y),
+            self.width.distance_to(&end.width),
+            self.height.distance_to(&end.height),
+        ]
+        .concat()
+    }
+
+    fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
+        self.x.update(components);
+        self.y.update(components);
+        self.width.update(components);
+        self.height.update(components);
+    }
+}
+
 impl Animate for iced::Shadow {
     fn components() -> usize {
         iced::Color::components() + iced::Vector::<f32>::components() + f32::components()
