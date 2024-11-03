@@ -169,6 +169,22 @@ where
         }
     }
 
+    /// Causes the animation to immediately jump to the target value.
+    pub fn settle(&mut self) {
+        let mut animated_style = self.animated_style.borrow_mut();
+        if let Some(animated_style) = animated_style.as_mut() {
+            animated_style.settle();
+        }
+    }
+
+    /// Causes the animation to immediately jump to the given `value`.
+    pub fn settle_at(&mut self, value: Style) {
+        let mut animated_style = self.animated_style.borrow_mut();
+        if let Some(animated_style) = animated_style.as_mut() {
+            animated_style.settle_at(value);
+        }
+    }
+
     /// Gets a reference to the animated style to use in a widget's `draw` function,
     /// using interior mutability to update the animation as necessary.
     ///
