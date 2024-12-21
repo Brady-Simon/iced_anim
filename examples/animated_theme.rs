@@ -3,7 +3,7 @@ use iced::{
     widget::{column, container, pick_list, row, text, tooltip, Row, Space},
     Border, Element, Length, Theme,
 };
-use iced_anim::{Animation, Spring, SpringEvent};
+use iced_anim::{Animated, Animation, SpringEvent};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -12,7 +12,7 @@ enum Message {
 
 #[derive(Default)]
 struct State {
-    theme: Spring<Theme>,
+    theme: Animated<Theme>,
 }
 
 impl State {

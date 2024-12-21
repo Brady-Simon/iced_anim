@@ -28,7 +28,6 @@ pub const MAX_DURATION: Duration = Duration::from_millis(33);
 /// As this is designed for GUI animations and not general-purpose physics simulations,
 /// it includes some features targeted toward avoiding UI issues like overshooting.
 /// See [`MAX_DURATION`] and [`ESPILON`] for examples of this.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spring<T> {
     /// The current value of the spring.
@@ -38,15 +37,12 @@ pub struct Spring<T> {
     /// The type of motion that the spring will follow, which controls damping/stiffness.
     motion: SpringMotion,
     /// The last instant at which this spring's value was updated.
-    #[cfg_attr(feature = "serde", serde(skip, default = "Instant::now"))]
     last_update: Instant,
     /// The current velocity components that make up this spring animation.
-    #[cfg_attr(feature = "serde", serde(skip, default))]
     velocity: Vec<f32>,
     /// The initial distance from the target when the animation was started or interrupted.
     /// This is used to help determine when the spring is near its target and is precomputed
     /// to avoid recalculating it every frame.
-    #[cfg_attr(feature = "serde", serde(skip, default))]
     initial_distance: Vec<f32>,
 }
 

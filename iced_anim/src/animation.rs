@@ -50,15 +50,15 @@ use iced::{
     Element,
 };
 
-use crate::{Animate, Spring, SpringEvent};
+use crate::{Animate, Animated, SpringEvent};
 
 /// A widget that helps you animate a value over time from your state.
 /// This is useful for animating changes to a widget's appearance or layout
 /// where you want to directly change the value stored in your state versus
 /// passively animating a value like the `AnimationBuilder`.
 pub struct Animation<'a, T: Animate, Message, Theme, Renderer> {
-    /// The spring that controls the animated value.
-    spring: &'a Spring<T>,
+    /// The animated value that will be updated over time.
+    animated_value: &'a Animated<T>,
     /// The content that will respond to the animation.
     content: Element<'a, Message, Theme, Renderer>,
     /// The function that will be called when the spring needs to be updated.
@@ -73,13 +73,13 @@ where
     T: 'static + Animate,
     Message: 'a + Clone,
 {
-    /// Creates a new `Animation` with the given `spring` and `content`.
+    /// Creates a new `Animation` with the given `animated_value` and `content`.
     pub fn new(
-        spring: &'a Spring<T>,
+        animated_value: &'a Animated<T>,
         content: impl Into<Element<'a, Message, Theme, Renderer>>,
     ) -> Self {
         Self {
-            spring,
+            animated_value,
             content: content.into(),
             on_update: None,
             is_disabled: false,
@@ -225,7 +225,7 @@ where
             viewport,
         );
 
-        if !self.spring.has_energy() {
+        if !self.animated_value.is_animating() {
             return status;
         }
 

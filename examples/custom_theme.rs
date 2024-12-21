@@ -1,21 +1,19 @@
-//! An example animating a custom theme palette with serde support.
+//! An example animating a custom theme palette.
 use iced::{
     daemon::DefaultStyle,
     widget::{button, text},
     Border, Color, Element,
 };
-use iced_anim::{Animate, Animation, Spring, SpringEvent};
-use serde::{Deserialize, Serialize};
+use iced_anim::{Animate, Animated, Animation, SpringEvent};
 
 /// A custom theme used by your application that supports a `Custom` theme
 /// to power animations between different variants.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 enum Theme {
     #[default]
     Light,
     Dark,
     /// A custom theme with a custom color palette, useful for animations.
-    #[serde(skip)]
     Custom(Palette),
 }
 
@@ -43,6 +41,14 @@ impl Animate for Theme {
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
         let mut palette = self.palette();
         palette.update(components);
+        *self = Theme::Custom(palette);
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        let start = start.palette();
+        let end = end.palette();
+        let mut palette = start.clone();
+        palette.lerp(&start, &end, progress);
         *self = Theme::Custom(palette);
     }
 }
@@ -119,10 +125,10 @@ enum Message {
     ChangeTheme(SpringEvent<Theme>),
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone)]
 struct State {
     /// The current app theme, which may be an animated value.
-    theme: Spring<Theme>,
+    theme: Animated<Theme>,
 }
 
 impl State {

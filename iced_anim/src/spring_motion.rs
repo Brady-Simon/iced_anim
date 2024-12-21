@@ -2,7 +2,6 @@
 use std::{fmt::Display, time::Duration};
 
 /// The motion associated with a spring animation.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum SpringMotion {
     /// A smooth animation without any overshoot of the target.

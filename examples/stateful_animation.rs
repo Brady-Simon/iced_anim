@@ -10,7 +10,7 @@ use iced::{
     Length::{self, Fill},
     Point, Size, Subscription, Theme,
 };
-use iced_anim::{Animation, Spring, SpringEvent, SpringMotion};
+use iced_anim::{Animated, Animation, SpringEvent, SpringMotion};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -20,7 +20,7 @@ enum Message {
 
 struct State {
     /// The current position of the bubble in the window.
-    position: Spring<Point>,
+    position: Animated<Point>,
     /// The size of the window to help generate a color.
     size: Size,
 }
@@ -28,10 +28,13 @@ struct State {
 impl Default for State {
     fn default() -> Self {
         Self {
-            position: Spring::new(Point::new(50.0, 50.0)).with_motion(SpringMotion::Custom {
-                response: Duration::from_millis(500),
-                damping: 0.6,
-            }),
+            position: Animated::spring(
+                Point::new(50.0, 50.0),
+                SpringMotion::Custom {
+                    response: Duration::from_millis(500),
+                    damping: 0.6,
+                },
+            ),
             size: Size::new(1024.0, 768.0),
         }
     }

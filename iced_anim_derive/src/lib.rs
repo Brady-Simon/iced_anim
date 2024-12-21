@@ -51,6 +51,13 @@ pub fn animate_derive(input: TokenStream) -> TokenStream {
         }
     });
 
+    let lerp_fields = fields.named.iter().map(|f| {
+        let name = &f.ident;
+        quote! {
+            ::iced_anim::Animate::lerp(&mut self.#name, &start.#name, &end.#name, progress);
+        }
+    });
+
     let impl_gen = quote! {
         impl ::iced_anim::Animate for #name {
             fn components() -> usize {
@@ -67,6 +74,10 @@ pub fn animate_derive(input: TokenStream) -> TokenStream {
                 let mut distances = ::std::vec::Vec::with_capacity(Self::components());
                 #(#distance_fields)*
                 distances.concat()
+            }
+
+            fn lerp(&mut self, start: &Self, end: &Self, progress: ::core::primitive::f32) {
+                #(#lerp_fields)*
             }
         }
     };

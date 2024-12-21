@@ -54,16 +54,18 @@
 //!
 //! This crate supports Iced 0.13 and newer.
 pub mod animate;
+pub mod animated;
 pub mod animation;
 pub mod animation_builder;
 pub mod spring;
 pub mod spring_event;
 pub mod spring_motion;
-
+pub mod transition;
 #[cfg(feature = "widgets")]
 pub mod widget;
 
 pub use animate::Animate;
+pub use animated::{Animated, AnimationType};
 pub use animation::Animation;
 pub use animation_builder::*;
 pub use spring::Spring;
