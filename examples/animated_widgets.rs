@@ -1,5 +1,3 @@
-use std::{f32::consts::PI, sync::LazyLock, time::Duration};
-
 use iced::{
     gradient::{ColorStop, Linear},
     widget::{checkbox, column, container, row, text},
@@ -8,11 +6,11 @@ use iced::{
     Length::Fill,
     Theme,
 };
-
 use iced_anim::{
+    spring::Motion,
     widget::button::{button, danger, primary, Status},
-    SpringMotion,
 };
+use std::{f32::consts::PI, sync::LazyLock, time::Duration};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -58,9 +56,9 @@ impl State {
                     .style(danger),
                 button(text("Reset").size(20))
                     .on_press_maybe(is_enabled.then_some(Message::Adjust(-self.counter)))
-                    .motion(SpringMotion::Custom {
+                    .motion(Motion {
                         response: Duration::from_millis(1000),
-                        damping: SpringMotion::Smooth.damping(),
+                        damping: Motion::SMOOTH.damping(),
                     })
                     .style(rainbow_style),
                 checkbox("Disable Buttons", self.is_disabled).on_toggle(Message::DisableButtons)

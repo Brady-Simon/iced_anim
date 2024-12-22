@@ -4,7 +4,7 @@ use iced::{
     widget::{container, MouseArea, Space},
     Border, Color, Element, Length, Padding, Point, Size, Subscription, Theme,
 };
-use iced_anim::{animation_builder::AnimationBuilder, SpringMotion};
+use iced_anim::{spring::Motion, AnimationBuilder};
 
 const BUBBLE_SIZE: f32 = 50.0;
 
@@ -82,7 +82,7 @@ impl State {
                 .on_move(Message::MoveTo)
                 .into()
             })
-            .motion(SpringMotion::Custom {
+            .motion(Motion {
                 response: Duration::from_millis(500),
                 damping: 0.6,
             })

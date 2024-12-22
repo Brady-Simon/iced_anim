@@ -1,6 +1,6 @@
 //! Svg widgets display vector graphics in your application.
 use super::AnimatedState;
-use crate::SpringMotion;
+use crate::spring::Motion;
 use iced::advanced::{
     layout, renderer,
     widget::{tree, Tree},
@@ -33,7 +33,7 @@ where
     class: Theme::Class<'a>,
     rotation: Rotation,
     opacity: f32,
-    motion: SpringMotion,
+    motion: Motion,
 }
 
 #[derive(Debug)]
@@ -55,7 +55,7 @@ where
             class: Theme::default(),
             rotation: Rotation::default(),
             opacity: 1.0,
-            motion: SpringMotion::default(),
+            motion: Motion::default(),
         }
     }
 
@@ -124,7 +124,7 @@ where
     }
 
     /// Sets the motion that will be used by animations.
-    pub fn motion(mut self, motion: SpringMotion) -> Self {
+    pub fn motion(mut self, motion: Motion) -> Self {
         self.motion = motion;
         self
     }

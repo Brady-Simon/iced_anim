@@ -10,11 +10,11 @@ use iced::{
     Length::{self, Fill},
     Point, Size, Subscription, Theme,
 };
-use iced_anim::{Animated, Animation, SpringEvent, SpringMotion};
+use iced_anim::{spring::Motion, Animated, Animation, Event};
 
 #[derive(Debug, Clone)]
 enum Message {
-    UpdatePosition(SpringEvent<Point>),
+    UpdatePosition(Event<Point>),
     Resized(Size),
 }
 
@@ -30,7 +30,7 @@ impl Default for State {
         Self {
             position: Animated::spring(
                 Point::new(50.0, 50.0),
-                SpringMotion::Custom {
+                Motion {
                     response: Duration::from_millis(500),
                     damping: 0.6,
                 },

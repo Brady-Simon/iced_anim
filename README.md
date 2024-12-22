@@ -72,7 +72,7 @@ then emitting a message when the value needs to change. Your app state and
 message would look something like this:
 
 ```rust
-use iced_anim::{Animation, Spring, SpringEvent};
+use iced_anim::{Animation, Spring, Event};
 
 #[derive(Default)]
 struct State {
@@ -81,13 +81,13 @@ struct State {
 
 #[derive(Clone)]
 enum Message {
-    UpdateSize(SpringEvent<f32>),
+    UpdateSize(Event<f32>),
 }
 ```
 
 Then, somewhere in your view, have a way to change the spring's target and
 update the animated value. You can use `.into()` as a shorthand to create a
-`SpringEvent::Target` for changing where the spring should animate towards.
+`Event::Target` for changing where the spring should animate towards.
 
 ```rust
 use iced::widget::{Column, button, text};
@@ -159,8 +159,7 @@ AnimationBuilder::new((self.size, self.color), |(size, color)| {
 ## Controlling the spring motion
 
 The spring motion of an `AnimationBuilder` can be customized. There are a few
-defaults like `SpringMotion::Smooth` and `SpringMotion::Bouncy`, but you can 
-provide a custom response and damping fraction with `SpringMotion::Custom`:
+defaults like `Motion::SMOOTH` and `Motion::BOUNCY`, but you can also create your own.
 
 ```rust
 AnimationBuilder::new(self.size, |size| {
@@ -169,9 +168,9 @@ AnimationBuilder::new(self.size, |size| {
         .into()
 })
 .animates_layout(true)
-.motion(SpringMotion::Custom { 
+.motion(Motion { 
+    damping: 0.5,
     response: Duration::from_millis(500),
-    damping: 0.5 
 })
 ```
 

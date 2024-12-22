@@ -2,28 +2,60 @@ use iced::{
     widget::{button, column, container, pick_list, row, stack, text, Column, Row, Space},
     Border, Element, Length,
 };
-use iced_anim::{animation_builder::AnimationBuilder, SpringMotion};
+use iced_anim::{animation_builder::AnimationBuilder, spring::Motion};
 
 const CIRCLE_DIAMETER: f32 = 50.0;
 
 const MAX_OFFSET: f32 = 200.0;
 
+/// A version of [`Motion`] that has an associated `name` for display purposes.
+#[derive(Debug, Clone, PartialEq)]
+struct PreviewMotion {
+    name: &'static str,
+    motion: Motion,
+}
+
+impl std::fmt::Display for PreviewMotion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+const MOTIONS: [PreviewMotion; 4] = [
+    PreviewMotion {
+        name: "Smooth",
+        motion: Motion::SMOOTH,
+    },
+    PreviewMotion {
+        name: "Snappy",
+        motion: Motion::SNAPPY,
+    },
+    PreviewMotion {
+        name: "Bouncy",
+        motion: Motion::BOUNCY,
+    },
+    PreviewMotion {
+        name: "Instant",
+        motion: Motion::INSTANT,
+    },
+];
+
 #[derive(Debug, Clone)]
 enum Message {
     ToggleOffset,
-    ChangeMotion(SpringMotion),
+    ChangeMotion(PreviewMotion),
 }
 
 struct State {
     offset: f32,
-    motion: SpringMotion,
+    preview_motion: PreviewMotion,
 }
 
 impl Default for State {
     fn default() -> Self {
         Self {
             offset: -MAX_OFFSET,
-            motion: SpringMotion::default(),
+            preview_motion: MOTIONS[0].clone(),
         }
     }
 }
@@ -36,19 +68,15 @@ impl State {
                 // self.offset = if self.offset == 0.0 { MAX_OFFSET } else { 0.0 };
             }
             Message::ChangeMotion(motion) => {
-                self.motion = motion;
+                self.preview_motion = motion;
             }
         }
     }
 
     fn view(&self) -> Element<Message> {
         let motion_picker = pick_list(
-            [
-                SpringMotion::Smooth,
-                SpringMotion::Snappy,
-                SpringMotion::Bouncy,
-            ],
-            Some(self.motion),
+            MOTIONS,
+            Some(self.preview_motion.clone()),
             Message::ChangeMotion,
         );
 
@@ -72,7 +100,7 @@ impl State {
                 .center(Length::Fill)
                 .into()
             })
-            .motion(self.motion)
+            .motion(self.preview_motion.motion)
             .animates_layout(true),
         )
         .center(Length::Fill);

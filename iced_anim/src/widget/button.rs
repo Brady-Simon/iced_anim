@@ -1,6 +1,6 @@
 //! An animated button that will automatically transition between different styles.
 use super::animated_state::AnimatedState;
-use crate::SpringMotion;
+use crate::spring::Motion;
 use iced::{
     advanced::{
         layout, renderer,
@@ -31,7 +31,7 @@ where
     padding: Padding,
     clip: bool,
     class: Theme::Class<'a>,
-    motion: SpringMotion,
+    motion: Motion,
 }
 
 enum OnPress<'a, Message> {
@@ -65,7 +65,7 @@ where
             padding: DEFAULT_PADDING,
             clip: false,
             class: Theme::default(),
-            motion: SpringMotion::default(),
+            motion: Motion::default(),
         }
     }
 
@@ -142,7 +142,7 @@ where
     }
 
     /// Sets the motion that will be used by animations.
-    pub fn motion(mut self, motion: SpringMotion) -> Self {
+    pub fn motion(mut self, motion: Motion) -> Self {
         self.motion = motion;
         self
     }

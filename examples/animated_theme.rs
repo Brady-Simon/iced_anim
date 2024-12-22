@@ -3,11 +3,11 @@ use iced::{
     widget::{column, container, pick_list, row, text, tooltip, Row, Space},
     Border, Element, Length, Theme,
 };
-use iced_anim::{Animated, Animation, SpringEvent};
+use iced_anim::{Animated, Animation, Event};
 
 #[derive(Debug, Clone)]
 enum Message {
-    ChangeTheme(SpringEvent<Theme>),
+    ChangeTheme(Event<Theme>),
 }
 
 #[derive(Default)]

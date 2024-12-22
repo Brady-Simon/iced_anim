@@ -1,36 +1,12 @@
-use std::time::{Duration, Instant};
+pub mod bezier;
+pub mod curve;
 
-use crate::{Animate, SpringEvent};
+use crate::{Animate, Event};
+pub use curve::Curve;
+use std::time::{Duration, Instant};
 
 /// The default duration for animations used for [`Default`] implementations.
 pub(crate) const DEFAULT_DURATION: Duration = Duration::from_millis(500);
-
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub enum Curve {
-    #[default]
-    Linear,
-    EaseIn,
-    EaseOut,
-    EaseInOut,
-    // Add more easing functions as needed
-}
-
-impl Curve {
-    pub fn value(&self, progress: f32) -> f32 {
-        match self {
-            Curve::Linear => progress,
-            Curve::EaseIn => progress.powf(2.0),
-            Curve::EaseOut => 1.0 - (1.0 - progress).powf(2.0),
-            Curve::EaseInOut => {
-                if progress < 0.5 {
-                    2.0 * progress.powf(2.0)
-                } else {
-                    1.0 - (-2.0 * progress + 2.0).powf(2.0) / 2.0
-                }
-            }
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Status {
@@ -153,28 +129,41 @@ where
     }
 
     /// Updates the transition with details of the given `event`.
-    pub fn update(&mut self, event: SpringEvent<T>) {
+    pub fn update(&mut self, event: Event<T>) {
         match event {
-            SpringEvent::Settle => {
+            Event::Settle => {
                 self.status.settle();
                 self.value = self.target.clone();
             }
-            SpringEvent::Tick(now) => {
+            Event::Tick(now) => {
                 let delta = now.duration_since(self.last_update);
                 self.last_update = now;
 
                 // TODO: Make status only have forward/backward and then add `is_complete` method
                 self.status
                     .update(delta.as_secs_f32() / self.duration.as_secs_f32());
-                self.value.lerp(
-                    &self.initial,
-                    &self.target,
-                    self.curve.value(self.status.progress()),
-                );
+                if self.status.is_complete() {
+                    match self.status {
+                        Status::Forward(_) => {
+                            self.value = self.target.clone();
+                        }
+                        Status::Reverse(_) => {
+                            self.value = self.initial.clone();
+                        }
+                    }
+                } else {
+                    self.value.lerp(
+                        &self.initial,
+                        &self.target,
+                        self.curve.value(self.status.progress()),
+                    );
+                }
             }
-            SpringEvent::Target(target) => {
-                if target == self.initial {
-                    // Reverse the transition if the new target is the initial value
+            Event::Target(target) => {
+                // Reverse the transition if the new target is the initial
+                // value and the animation isn't done. This ensures that the
+                // animation follows the same curve when reversing.
+                if target == self.initial && !self.status.is_complete() {
                     self.status.reverse();
                 } else if target != self.target {
                     self.status = Status::Forward(0.0);

@@ -6,13 +6,13 @@ use iced::{
     widget::{button, column, container, row, text},
     Border, Color, Element, Length,
 };
-use iced_anim::{Animated, Animation, SpringEvent};
+use iced_anim::{spring::Motion, transition::Curve, Animated, Animation, Event};
 
 #[derive(Debug, Clone)]
 enum Message {
     AdjustAll,
-    ChangeSize(SpringEvent<f32>),
-    ChangeColor(SpringEvent<Color>),
+    ChangeSize(Event<f32>),
+    ChangeColor(Event<Color>),
 }
 
 struct State {
@@ -26,8 +26,9 @@ const MAGENTA: Color = Color::from_rgb(1.0, 0.0, 1.0);
 impl Default for State {
     fn default() -> Self {
         Self {
-            size: Animated::transition(50.0, iced_anim::transition::Curve::EaseInOut),
-            color: Animated::transition(CYAN, iced_anim::transition::Curve::EaseInOut),
+            size: Animated::transition(50.0, Curve::Ease),
+            // size: Animated::spring(50.0, Motion::SMOOTH),
+            color: Animated::transition(CYAN, Curve::Ease),
         }
     }
 }

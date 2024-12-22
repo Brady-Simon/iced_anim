@@ -33,14 +33,14 @@
 //!    For the current status, you can include any other fields that may be useful for determining
 //!    the current status. For a button, this would be something like the internal widget state
 //!    for tracking whether the button is pressed, and the cursor + layout for hover states.
-//! 2. Add a [`SpringMotion`] field to your widget so users can change how the animation behaves.
+//! 2. Add a [`Motion`] field to your widget so users can change how the animation behaves.
 //!    Then, add a builder function for updating it, e.g.
 //!    ```no_run
-//!    # use iced_anim::SpringMotion;
-//!    # struct Button { motion: SpringMotion }
+//!    # use iced_anim::spring::Motion;
+//!    # struct Button { motion: Motion }
 //!    # impl Button {
 //!    /// Sets the motion that will be used by animations.
-//!    pub fn motion(mut self, motion: SpringMotion) -> Self {
+//!    pub fn motion(mut self, motion: Motion) -> Self {
 //!        self.motion = motion;
 //!        self
 //!    }
@@ -99,7 +99,7 @@ use std::{
     time::Instant,
 };
 
-use crate::{Animate, Spring, SpringMotion};
+use crate::{spring::Motion, Animate, Spring};
 
 /// Helps manage animating styles for widgets.
 ///
@@ -114,7 +114,7 @@ pub struct AnimatedState<Status, Style> {
     /// first render, when the style is created.
     animated_style: RefCell<Option<Spring<Style>>>,
     /// The motion used by the animated style.
-    motion: SpringMotion,
+    motion: Motion,
 }
 
 impl<Status, Style> AnimatedState<Status, Style>
@@ -122,7 +122,7 @@ where
     Status: PartialEq,
     Style: Animate + Clone + PartialEq,
 {
-    pub fn new(status: Status, motion: SpringMotion) -> Self {
+    pub fn new(status: Status, motion: Motion) -> Self {
         Self {
             status,
             animated_style: RefCell::new(None),
@@ -135,7 +135,7 @@ where
     }
 
     /// Updates this animated state based on a potentially new `style` received by the widget.
-    pub fn diff(&mut self, motion: SpringMotion) {
+    pub fn diff(&mut self, motion: Motion) {
         if self.motion != motion {
             self.motion = motion;
             let mut animated_style = self.animated_style.borrow_mut();

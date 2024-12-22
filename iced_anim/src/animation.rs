@@ -10,16 +10,16 @@
 //! # Example
 //! ```rust
 //! use iced::widget::{button, text, Row};
-//! use iced_anim::{Animation, Spring, SpringEvent};
+//! use iced_anim::{Animation, Animated, Event};
 //!
 //! #[derive(Default)]
 //! struct State {
-//!     size: Spring<f32>,
+//!     size: Animated<f32>,
 //! }
 //!
 //! #[derive(Clone)]
 //! enum Message {
-//!     UpdateSize(SpringEvent<f32>),
+//!     UpdateSize(Event<f32>),
 //! }
 //!
 //! impl State {
@@ -50,7 +50,7 @@ use iced::{
     Element,
 };
 
-use crate::{Animate, Animated, SpringEvent};
+use crate::{Animate, Animated, Event};
 
 /// A widget that helps you animate a value over time from your state.
 /// This is useful for animating changes to a widget's appearance or layout
@@ -62,7 +62,7 @@ pub struct Animation<'a, T: Animate, Message, Theme, Renderer> {
     /// The content that will respond to the animation.
     content: Element<'a, Message, Theme, Renderer>,
     /// The function that will be called when the spring needs to be updated.
-    on_update: Option<Box<dyn Fn(SpringEvent<T>) -> Message>>,
+    on_update: Option<Box<dyn Fn(Event<T>) -> Message>>,
     /// Whether animations are disabled, in which case the value will be updated
     /// immediately without animating. Useful for reduced motion preferences.
     is_disabled: bool,
@@ -89,7 +89,7 @@ where
     /// Sets the function that will be called when the spring needs to be updated.
     pub fn on_update<F>(mut self, build_message: F) -> Self
     where
-        F: Fn(SpringEvent<T>) -> Message + 'static,
+        F: Fn(Event<T>) -> Message + 'static,
     {
         self.on_update = Some(Box::new(build_message));
         self
@@ -230,11 +230,11 @@ where
         }
 
         if let Some(on_update) = &self.on_update {
-            let event: SpringEvent<T> = if self.is_disabled {
-                SpringEvent::Settle
+            let event: Event<T> = if self.is_disabled {
+                Event::Settle
             } else {
                 let now = Instant::now();
-                SpringEvent::Tick(now)
+                Event::Tick(now)
             };
             shell.publish(on_update(event));
         }

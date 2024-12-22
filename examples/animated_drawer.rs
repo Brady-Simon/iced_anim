@@ -5,7 +5,7 @@ use iced::{
     Length::{self, Fill},
     Padding, Point, Rectangle, Size, Subscription, Theme, Vector,
 };
-use iced_anim::animation_builder;
+use iced_anim::{animation_builder, spring::Motion};
 
 /// Some placeholder text to show within the drawer.
 const LOREM_IPSUM: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus commodo blandit posuere. Sed pharetra, lacus at pellentesque gravida, purus sem consequat lectus, vel venenatis justo ex ut nibh. Duis quis risus vitae libero volutpat fringilla vitae et magna. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Cras a malesuada nisl, ac scelerisque mauris. Praesent justo turpis, molestie sed dapibus id, mollis nec erat. Nam eu efficitur eros. Nullam condimentum neque at massa varius, ut interdum est sollicitudin. Etiam sit amet libero purus. In enim ipsum, congue in nulla sit amet, condimentum venenatis augue.
@@ -92,7 +92,7 @@ fn drawer<'a>(
         Color::TRANSPARENT
     };
 
-    let motion = iced_anim::SpringMotion::Snappy;
+    let motion = Motion::SNAPPY;
 
     let drawer_stack = Stack::new()
         .width(Length::Fill)

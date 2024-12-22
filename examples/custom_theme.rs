@@ -4,7 +4,7 @@ use iced::{
     widget::{button, text},
     Border, Color, Element,
 };
-use iced_anim::{Animate, Animated, Animation, SpringEvent};
+use iced_anim::{Animate, Animated, Animation, Event};
 
 /// A custom theme used by your application that supports a `Custom` theme
 /// to power animations between different variants.
@@ -122,7 +122,7 @@ const DARK_PALETTE: Palette = Palette {
 #[derive(Debug, Clone)]
 enum Message {
     /// Indicates that the theme should change or is changing.
-    ChangeTheme(SpringEvent<Theme>),
+    ChangeTheme(Event<Theme>),
 }
 
 #[derive(Debug, Default, Clone)]

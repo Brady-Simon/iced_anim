@@ -1,8 +1,9 @@
 use std::time::Duration;
 
 use crate::{
+    spring::Motion,
     transition::{Curve, Transition},
-    Animate, Spring, SpringEvent, SpringMotion,
+    Animate, Event, Spring,
 };
 
 /// Designed to wrap an [`Animate`] value and enable animating changes to it.
@@ -54,7 +55,7 @@ where
         }
     }
 
-    pub fn spring(value: T, motion: SpringMotion) -> Self {
+    pub fn spring(value: T, motion: Motion) -> Self {
         Self {
             animation: AnimationType::Spring(Spring::new(value).with_motion(motion)),
         }
@@ -80,7 +81,7 @@ where
         self
     }
 
-    pub fn update(&mut self, event: SpringEvent<T>) {
+    pub fn update(&mut self, event: Event<T>) {
         match &mut self.animation {
             AnimationType::Spring(spring) => spring.update(event),
             AnimationType::Transition(transition) => transition.update(event),

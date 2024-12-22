@@ -1,10 +1,13 @@
 //! Spring physics to enable natural and interactive animations.
+pub mod motion;
+
+pub use motion::Motion;
 use std::{
     fmt::Debug,
     time::{Duration, Instant},
 };
 
-use crate::{spring_event::SpringEvent, Animate, SpringMotion};
+use crate::{event::Event, Animate};
 
 /// The minimum percent at which a spring is considered near its target.
 ///
@@ -35,7 +38,7 @@ pub struct Spring<T> {
     /// The target value that the spring will animate towards.
     target: T,
     /// The type of motion that the spring will follow, which controls damping/stiffness.
-    motion: SpringMotion,
+    motion: Motion,
     /// The last instant at which this spring's value was updated.
     last_update: Instant,
     /// The current velocity components that make up this spring animation.
@@ -64,8 +67,8 @@ impl<T> Spring<T> {
         &self.target
     }
 
-    /// Returns the spring's current [`SpringMotion`].
-    pub fn motion(&self) -> SpringMotion {
+    /// Returns the spring's current [`Motion`].
+    pub fn motion(&self) -> Motion {
         self.motion
     }
 
@@ -75,12 +78,12 @@ impl<T> Spring<T> {
     }
 
     /// Updates the spring's `motion` to the given value.
-    pub fn set_motion(&mut self, motion: SpringMotion) {
+    pub fn set_motion(&mut self, motion: Motion) {
         self.motion = motion;
     }
 
     /// Returns an updated spring with the given `motion`.
-    pub fn with_motion(mut self, motion: SpringMotion) -> Self {
+    pub fn with_motion(mut self, motion: Motion) -> Self {
         self.motion = motion;
         self
     }
@@ -94,7 +97,7 @@ where
     ///
     /// Use the builder methods to customize the spring's behavior and target.
     pub fn new(value: T) -> Self {
-        let motion = SpringMotion::default();
+        let motion = Motion::default();
         Self {
             value: value.clone(),
             target: value,
@@ -119,26 +122,26 @@ where
 
     /// Updates the spring based on the given `event`.
     ///
-    /// You can update either the current value by passing [`SpringEvent::Tick`]
-    /// or change the target value by passing [`SpringEvent::Target`].
+    /// You can update either the current value by passing [`Event::Tick`]
+    /// or change the target value by passing [`Event::Target`].
     ///
     /// ```rust
-    /// # use iced_anim::{Spring, SpringEvent};
+    /// # use iced_anim::{Spring, Event};
     /// let mut spring = Spring::new(0.0);
-    /// spring.update(SpringEvent::Target(5.0));
+    /// spring.update(Event::Target(5.0));
     /// assert_eq!(spring.target(), &5.0);
     ///
-    /// spring.update(SpringEvent::Tick(std::time::Instant::now()));
+    /// spring.update(Event::Tick(std::time::Instant::now()));
     /// assert!(*spring.value() > 0.0);
     ///
-    /// spring.update(SpringEvent::Settle);
+    /// spring.update(Event::Settle);
     /// assert_eq!(spring.value(), spring.target());
     /// ```
-    pub fn update(&mut self, event: SpringEvent<T>) {
+    pub fn update(&mut self, event: Event<T>) {
         match event {
-            SpringEvent::Tick(now) => self.tick(now),
-            SpringEvent::Target(target) => self.interrupt(target),
-            SpringEvent::Settle => self.settle(),
+            Event::Tick(now) => self.tick(now),
+            Event::Target(target) => self.interrupt(target),
+            Event::Settle => self.settle(),
         }
     }
 
@@ -329,7 +332,7 @@ mod tests {
     fn interrupt_does_not_reset_last_update_with_energy() {
         let mut spring = Spring::new(0.0).with_target(10.0).with_velocity(vec![1.0]);
         let update_time = Instant::now();
-        spring.update(SpringEvent::Tick(update_time));
+        spring.update(Event::Tick(update_time));
         spring.interrupt(5.0);
 
         // The last update time should not be reset if the spring has energy.
@@ -362,12 +365,10 @@ mod tests {
     /// A response of zero should imply the spring is near its target.
     #[test]
     fn is_near_end_with_zero_duration() {
-        let spring = Spring::new(0.0)
-            .with_target(1.0)
-            .with_motion(SpringMotion::Custom {
-                response: Duration::ZERO,
-                damping: 0.5,
-            });
+        let spring = Spring::new(0.0).with_target(1.0).with_motion(Motion {
+            damping: 0.5,
+            response: Duration::ZERO,
+        });
         assert!(spring.is_near_end());
     }
 
@@ -375,11 +376,11 @@ mod tests {
     #[test]
     fn update_zero_response() {
         let mut spring = Spring::new(0.0).with_target(1.0);
-        spring.set_motion(SpringMotion::Custom {
+        spring.set_motion(Motion {
             response: Duration::ZERO,
             damping: 0.5,
         });
-        spring.update(SpringEvent::Tick(Instant::now()));
+        spring.update(Event::Tick(Instant::now()));
         assert_eq!(spring.value(), spring.target());
     }
 }

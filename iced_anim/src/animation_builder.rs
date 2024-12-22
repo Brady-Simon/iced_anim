@@ -82,7 +82,7 @@ use iced::{
     Element,
 };
 
-use crate::{animate::Animate, Spring, SpringMotion};
+use crate::{animate::Animate, spring::Motion, Spring};
 
 /// A widget that implicitly animates a value anytime it changes.
 ///
@@ -127,7 +127,7 @@ where
     }
 
     /// Defines the way the spring will animate the value.
-    pub fn motion(mut self, motion: SpringMotion) -> Self {
+    pub fn motion(mut self, motion: Motion) -> Self {
         self.spring = self.spring.with_motion(motion);
         self
     }
