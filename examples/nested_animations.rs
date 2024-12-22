@@ -6,7 +6,7 @@ use iced::{
     widget::{button, column, container, row, text},
     Border, Color, Element, Length,
 };
-use iced_anim::{spring::Motion, transition::Curve, Animated, Animation, Event};
+use iced_anim::{transition::Curve, Animated, Animation, Event};
 
 #[derive(Debug, Clone)]
 enum Message {
