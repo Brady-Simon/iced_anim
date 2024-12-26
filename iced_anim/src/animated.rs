@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::{
     spring::Motion,
@@ -110,6 +110,37 @@ where
         match &self.animation {
             AnimationType::Spring(spring) => spring.target(),
             AnimationType::Transition(transition) => transition.target(),
+        }
+    }
+
+    pub fn to(mut self, target: T) -> Self {
+        match &mut self.animation {
+            AnimationType::Spring(spring) => spring.interrupt(target),
+            AnimationType::Transition(transition) => transition.interrupt(target),
+        }
+
+        self
+    }
+
+    pub fn settle(&mut self) {
+        match &mut self.animation {
+            AnimationType::Spring(spring) => spring.settle(),
+            AnimationType::Transition(transition) => transition.settle(),
+        }
+    }
+
+    pub fn tick(&mut self, now: Instant) {
+        match &mut self.animation {
+            AnimationType::Spring(spring) => spring.tick(now),
+            AnimationType::Transition(transition) => transition.tick(now),
+        }
+    }
+
+    /// Interrupts the existing animation and starts a new one with the new `target`.
+    pub fn interrupt(&mut self, target: T) {
+        match &mut self.animation {
+            AnimationType::Spring(spring) => spring.interrupt(target),
+            AnimationType::Transition(transition) => transition.interrupt(target),
         }
     }
 }

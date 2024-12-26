@@ -98,45 +98,61 @@ where
     pub fn update(&mut self, event: Event<T>) {
         match event {
             Event::Settle => self.settle(),
-            Event::Tick(now) => {
-                // Figure out how much time has passed since the last update
-                let delta = now.duration_since(self.last_update);
-                self.last_update = now;
+            Event::Tick(now) => self.tick(now),
+            Event::Target(target) => self.interrupt(target),
+        }
+    }
 
-                self.progress
-                    .update(delta.as_secs_f32() / self.duration.as_secs_f32());
-                if self.progress.is_complete() {
-                    // We're at the target - assign the current value to the target value.
-                    self.value = self.target().clone();
-                } else {
-                    // Continue to lerp the value towards the target
-                    self.value.lerp(
-                        &self.initial,
-                        &self.target,
-                        self.curve.value(self.progress.value()),
-                    );
-                }
-            }
-            Event::Target(target) => {
-                // Reverse the transition if the new target is the initial
-                // value and the animation isn't done. This ensures that the
-                // animation follows the same curve when reversing.
-                let is_initial_target = match self.progress {
-                    Progress::Forward(_) => target == self.initial,
-                    Progress::Reverse(_) => target == self.target,
-                };
+    /// Interrupts the existing transition and starts a new one with the new `target`.
+    pub fn interrupt(&mut self, target: T) {
+        // Reset the last update if the transition isn't moving.
+        // This avoids resetting the last update during continuously interrupted animations.
+        if !self.is_animating() {
+            self.last_update = Instant::now();
+        }
 
-                if is_initial_target && !self.progress.is_complete() {
-                    self.reverse();
-                } else if &target != self.target() {
-                    // Target has changed, reset the progress and update the initial value.
-                    self.progress = Progress::Forward(0.0);
-                    self.initial = self.value.clone();
-                    self.target = target;
-                }
+        // Reverse the transition if the new target is the initial
+        // value and the animation isn't done. This ensures that the
+        // animation follows the same curve when reversing.
+        let is_initial_target = match self.progress {
+            Progress::Forward(_) => target == self.initial,
+            Progress::Reverse(_) => target == self.target,
+        };
 
-                self.last_update = Instant::now();
-            }
+        if is_initial_target && !self.progress.is_complete() {
+            self.reverse();
+        } else if &target != self.target() {
+            // Target has changed, reset the progress and update the initial value.
+            self.progress = Progress::Forward(0.0);
+            self.initial = self.value.clone();
+            self.target = target;
+        }
+
+        self.last_update = Instant::now();
+    }
+
+    /// Updates the transition's value based on the elapsed time since the last update.
+    pub fn tick(&mut self, now: Instant) {
+        if !self.is_animating() {
+            return;
+        }
+
+        // Figure out how much time has passed since the last update
+        let delta = now.duration_since(self.last_update);
+        self.last_update = now;
+
+        self.progress
+            .update(delta.as_secs_f32() / self.duration.as_secs_f32());
+        if self.progress.is_complete() {
+            // We're at the target - assign the current value to the target value.
+            self.value = self.target().clone();
+        } else {
+            // Continue to lerp the value towards the target
+            self.value.lerp(
+                &self.initial,
+                &self.target,
+                self.curve.value(self.progress.value()),
+            );
         }
     }
 
