@@ -21,11 +21,8 @@ enum Message {
 
 #[derive(Debug, Clone)]
 struct AppState {
-    /// The index of the user's currently selected area.
-    ///
-    ///  This is designed to replicate how you might have some non-animated data
-    /// that maps to animated data.
-    selection_index: usize,
+    /// The index of the user's currently hovered selection.
+    hovered_index: usize,
     /// The animated part of the user's selection.
     animated_selection: Animated<Rectangle>,
     /// The collection of shapes drawn on screen.
@@ -54,7 +51,7 @@ impl Default for AppState {
                 .expand(Padding::new(-4.)),
         ];
         Self {
-            selection_index: 0,
+            hovered_index: 0,
             animated_selection: Animated::spring(
                 shapes[0],
                 Motion::default().with_duration(Duration::from_millis(300)),
@@ -77,7 +74,8 @@ impl AppState {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::SelectIndex(index) => {
-                self.selection_index = index;
+                // Update the hovered index, and also set the new target for the animation.
+                self.hovered_index = index;
                 self.animated_selection.set_target(self.shapes[index]);
             }
             Message::UpdateAnimatedSelection(event) => {
@@ -139,7 +137,7 @@ impl canvas::Program<Message> for AppState {
                 };
 
                 // Don't update the selection if it hasn't changed
-                if index == self.selection_index {
+                if index == self.hovered_index {
                     return (canvas::event::Status::Ignored, None);
                 }
 
