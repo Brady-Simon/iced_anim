@@ -1071,7 +1071,7 @@ mod tests {
         };
 
         let mut spring = crate::Spring::new(style);
-        spring.interrupt(target);
+        spring.set_target(target);
         spring.tick(std::time::Instant::now());
         assert_ne!(*spring.value(), style);
     }

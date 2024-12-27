@@ -99,12 +99,17 @@ where
         match event {
             Event::Settle => self.settle(),
             Event::Tick(now) => self.tick(now),
-            Event::Target(target) => self.interrupt(target),
+            Event::Target(target) => self.set_target(target),
         }
     }
 
     /// Interrupts the existing transition and starts a new one with the new `target`.
-    pub fn interrupt(&mut self, target: T) {
+    pub fn set_target(&mut self, target: T) {
+        // Don't do anything if the target hasn't changed.
+        if self.target == target {
+            return;
+        }
+
         // Reset the last update if the transition isn't moving.
         // This avoids resetting the last update during continuously interrupted animations.
         if !self.is_animating() {

@@ -113,10 +113,19 @@ where
         }
     }
 
+    /// Sets the `target` value of the animation.
+    pub fn set_target(&mut self, target: T) {
+        match &mut self.animation {
+            AnimationType::Spring(spring) => spring.set_target(target),
+            AnimationType::Transition(transition) => transition.set_target(target),
+        }
+    }
+
+    /// Sets the `target` value of the animation, and returns the updated animation.
     pub fn to(mut self, target: T) -> Self {
         match &mut self.animation {
-            AnimationType::Spring(spring) => spring.interrupt(target),
-            AnimationType::Transition(transition) => transition.interrupt(target),
+            AnimationType::Spring(spring) => spring.set_target(target),
+            AnimationType::Transition(transition) => transition.set_target(target),
         }
 
         self
@@ -139,8 +148,8 @@ where
     /// Interrupts the existing animation and starts a new one with the new `target`.
     pub fn interrupt(&mut self, target: T) {
         match &mut self.animation {
-            AnimationType::Spring(spring) => spring.interrupt(target),
-            AnimationType::Transition(transition) => transition.interrupt(target),
+            AnimationType::Spring(spring) => spring.set_target(target),
+            AnimationType::Transition(transition) => transition.set_target(target),
         }
     }
 }

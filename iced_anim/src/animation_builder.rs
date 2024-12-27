@@ -189,7 +189,7 @@ where
             if self.is_disabled {
                 spring.settle();
             } else {
-                spring.interrupt(self.spring.target().clone());
+                spring.set_target(self.spring.target().clone());
             }
         }
 

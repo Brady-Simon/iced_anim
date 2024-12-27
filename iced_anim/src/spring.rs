@@ -110,7 +110,7 @@ where
 
     /// Returns an updated spring with the given `target`.
     pub fn with_target(mut self, target: T) -> Self {
-        self.interrupt(target);
+        self.set_target(target);
         self
     }
 
@@ -140,7 +140,7 @@ where
     pub fn update(&mut self, event: Event<T>) {
         match event {
             Event::Tick(now) => self.tick(now),
-            Event::Target(target) => self.interrupt(target),
+            Event::Target(target) => self.set_target(target),
             Event::Settle => self.settle(),
         }
     }
@@ -188,7 +188,12 @@ where
     }
 
     /// Interrupts the existing animation and starts a new one with the `new_target`.
-    pub fn interrupt(&mut self, new_target: T) {
+    pub fn set_target(&mut self, new_target: T) {
+        // Don't do anything if the target hasn't changed.
+        if self.target == new_target {
+            return;
+        }
+
         // Reset the last update if the spring doesn't have any energy.
         // This avoids resetting the last update during continuously interrupted animations.
         if !self.has_energy() {
@@ -302,12 +307,12 @@ mod tests {
     }
 
     #[test]
-    fn interrupt_changes_target_and_resets_last_update_time() {
+    fn set_target_changes_target_and_resets_last_update_time() {
         let mut spring = Spring::new(0.0).with_target(1.0);
 
         let now = Instant::now();
         spring.tick(now);
-        spring.interrupt(5.0);
+        spring.set_target(5.0);
 
         // The target should change as well as adjust the last update time.
         assert_eq!(spring.target, 5.0);
@@ -315,10 +320,10 @@ mod tests {
 
     /// An spring at rest should have its last update reset when interrupted.
     #[test]
-    fn interrupt_resets_last_update_when_at_rest() {
+    fn set_target_resets_last_update_when_at_rest() {
         let start_time = Instant::now();
         let mut spring = Spring::new(0.0);
-        spring.interrupt(5.0);
+        spring.set_target(5.0);
 
         // The last update time should be reset if the spring has no energy.
         assert!(spring.last_update > start_time);
@@ -329,11 +334,11 @@ mod tests {
     /// which can cause the Diff -> Event loop to have 0ms duration between updates when the real
     /// duration between renders is much longer.
     #[test]
-    fn interrupt_does_not_reset_last_update_with_energy() {
+    fn set_target_does_not_reset_last_update_with_energy() {
         let mut spring = Spring::new(0.0).with_target(10.0).with_velocity(vec![1.0]);
         let update_time = Instant::now();
         spring.update(Event::Tick(update_time));
-        spring.interrupt(5.0);
+        spring.set_target(5.0);
 
         // The last update time should not be reset if the spring has energy.
         assert_eq!(spring.last_update, update_time);
