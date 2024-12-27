@@ -29,26 +29,19 @@ struct AppState {
     shapes: Vec<Rectangle>,
 }
 
+const PADDING: Padding = Padding::new(-4.0);
 impl Default for AppState {
     fn default() -> Self {
         let shapes = vec![
-            Rectangle::new(Point::ORIGIN, Size::new(256.0, 256.0)).expand(Padding::new(-4.)),
-            Rectangle::new(Point::new(256.0, 0.0), Size::new(256.0, 256.0))
-                .expand(Padding::new(-4.)),
-            Rectangle::new(Point::new(512.0, 0.0), Size::new(256.0, 256.0))
-                .expand(Padding::new(-4.)),
-            Rectangle::new(Point::new(768.0, 0.0), Size::new(256.0, 256.0))
-                .expand(Padding::new(-4.)),
-            Rectangle::new(Point::new(0.0, 256.0), Size::new(512.0, 256.0))
-                .expand(Padding::new(-4.)),
-            Rectangle::new(Point::new(512.0, 256.0), Size::new(512.0, 256.0))
-                .expand(Padding::new(-4.)),
-            Rectangle::new(Point::new(0.0, 512.0), Size::new(341.0, 256.0))
-                .expand(Padding::new(-4.)),
-            Rectangle::new(Point::new(341.0, 512.0), Size::new(341.0, 256.0))
-                .expand(Padding::new(-4.)),
-            Rectangle::new(Point::new(682.0, 512.0), Size::new(342.0, 256.0))
-                .expand(Padding::new(-4.)),
+            Rectangle::new(Point::ORIGIN, Size::new(256.0, 256.0)).expand(PADDING),
+            Rectangle::new(Point::new(256.0, 0.0), Size::new(256.0, 256.0)).expand(PADDING),
+            Rectangle::new(Point::new(512.0, 0.0), Size::new(256.0, 256.0)).expand(PADDING),
+            Rectangle::new(Point::new(768.0, 0.0), Size::new(256.0, 256.0)).expand(PADDING),
+            Rectangle::new(Point::new(0.0, 256.0), Size::new(512.0, 256.0)).expand(PADDING),
+            Rectangle::new(Point::new(512.0, 256.0), Size::new(512.0, 256.0)).expand(PADDING),
+            Rectangle::new(Point::new(0.0, 512.0), Size::new(341.0, 256.0)).expand(PADDING),
+            Rectangle::new(Point::new(341.0, 512.0), Size::new(341.0, 256.0)).expand(PADDING),
+            Rectangle::new(Point::new(682.0, 512.0), Size::new(342.0, 256.0)).expand(PADDING),
         ];
         Self {
             hovered_index: 0,
