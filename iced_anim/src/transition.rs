@@ -1,14 +1,12 @@
+//! A type of animation that transitions between two values by following a curve.
 pub mod bezier;
 pub mod curve;
 mod progress;
 
-use crate::{Animate, Event};
+use crate::{animated::DEFAULT_DURATION, Animate, Event};
 pub use curve::Curve;
 pub use progress::Progress;
 use std::time::{Duration, Instant};
-
-/// The default duration for animations used for [`Default`] implementations.
-pub(crate) const DEFAULT_DURATION: Duration = Duration::from_millis(500);
 
 /// A type of animation that transitions between two values.
 #[derive(Debug, Clone, PartialEq)]
@@ -63,6 +61,11 @@ where
         self.duration = duration;
     }
 
+    /// Sets the curve of the transition.
+    pub fn set_curve(&mut self, curve: Curve) {
+        self.curve = curve;
+    }
+
     /// Returns a reference to the current `value` of the transition.
     pub fn value(&self) -> &T {
         &self.value
@@ -77,6 +80,11 @@ where
             Progress::Forward(_) => &self.target,
             Progress::Reverse(_) => &self.initial,
         }
+    }
+
+    /// Returns the duration of the transition.
+    pub fn duration(&self) -> Duration {
+        self.duration
     }
 
     /// Reverses the transition, swapping the initial and target values
@@ -156,6 +164,8 @@ where
             .update(delta.as_secs_f32() / self.duration.as_secs_f32());
         if self.progress.is_complete() {
             // We're at the target - assign the current value to the target value.
+            // This ensures that the value is exactly the target value, even if the
+            // curve doesn't reach it or the animation implementation isn't correct.
             self.value = self.target().clone();
         } else {
             // Continue to lerp the value towards the target
@@ -176,6 +186,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::animated::DEFAULT_DURATION;
 
     /// Various builder functions should behave as expected.
     #[test]

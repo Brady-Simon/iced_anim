@@ -1,6 +1,6 @@
 //! Svg widgets display vector graphics in your application.
 use super::AnimatedState;
-use crate::spring::Motion;
+use crate::animated::AnimationConfig;
 use iced::advanced::{
     layout, renderer,
     widget::{tree, Tree},
@@ -33,7 +33,7 @@ where
     class: Theme::Class<'a>,
     rotation: Rotation,
     opacity: f32,
-    motion: Motion,
+    animation: AnimationConfig,
 }
 
 #[derive(Debug)]
@@ -55,7 +55,7 @@ where
             class: Theme::default(),
             rotation: Rotation::default(),
             opacity: 1.0,
-            motion: Motion::default(),
+            animation: AnimationConfig::default(),
         }
     }
 
@@ -123,9 +123,9 @@ where
         self
     }
 
-    /// Sets the motion that will be used by animations.
-    pub fn motion(mut self, motion: Motion) -> Self {
-        self.motion = motion;
+    /// Sets the animation of the [`Svg`].
+    pub fn animation(mut self, config: AnimationConfig) -> Self {
+        self.animation = config;
         self
     }
 
@@ -159,7 +159,7 @@ where
     fn state(&self) -> tree::State {
         let status = self.get_initial_status();
         let state = State {
-            animated_state: AnimatedState::new(status, self.motion),
+            animated_state: AnimatedState::new(status, self.animation),
         };
 
         tree::State::new(state)
@@ -168,7 +168,7 @@ where
     fn diff(&self, tree: &mut Tree) {
         // If the style changes from outside, then immediately update the style.
         let state = tree.state.downcast_mut::<State>();
-        state.animated_state.diff(self.motion);
+        state.animated_state.diff(self.animation);
     }
 
     fn size(&self) -> Size<Length> {

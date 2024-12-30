@@ -33,15 +33,15 @@
 //!    For the current status, you can include any other fields that may be useful for determining
 //!    the current status. For a button, this would be something like the internal widget state
 //!    for tracking whether the button is pressed, and the cursor + layout for hover states.
-//! 2. Add a [`Motion`] field to your widget so users can change how the animation behaves.
+//! 2. Add an [`AnimationConfig`] to the widget so users can change how the animation behaves.
 //!    Then, add a builder function for updating it, e.g.
 //!    ```no_run
-//!    # use iced_anim::spring::Motion;
-//!    # struct Button { motion: Motion }
+//!    # use iced_anim::animated::AnimationConfig;
+//!    # struct Button { animation: AnimationConfig }
 //!    # impl Button {
-//!    /// Sets the motion that will be used by animations.
-//!    pub fn motion(mut self, motion: Motion) -> Self {
-//!        self.motion = motion;
+//!    /// Sets the animation configuration for this widget.
+//!    pub fn animation(mut self, config: AnimationConfig) -> Self {
+//!        self.animation = config;
 //!        self
 //!    }
 //!    # }
@@ -59,15 +59,15 @@
 //!    }
 //!    ```
 //! 4. Update [`iced::advanced::Widget::state`] to get the initial status, then pass that status
-//!    and motion into [`AnimatedState::new`] to create the animated state.
-//! 5. Update [`iced::advanced::Widget::diff`] to call call [`AnimatedState::diff`] if the motion
+//!    and animation config into [`AnimatedState::new`] to create the animated state.
+//! 5. Update [`iced::advanced::Widget::diff`] to call call [`AnimatedState::diff`] if the config
 //!    has changed externally.
 //!    ```ignore
 //!    fn diff(&self, tree: &mut Tree) {
-//!        // Diff the animated state with a potentially new motion.
+//!        // Diff the animated state with a potentially new animation config.
 //!        let state = tree.state.downcast_mut::<State>();
-//!        state.animated_state.diff(self.motion);
-//!        // Diff the rest of your widget state as necessary.
+//!        state.animated_state.diff(self.animation);
+//!        // Diff the rest of your widget state as necessary, e.g.
 //!        tree.diff_children(std::slice::from_ref(&self.content));
 //!    }
 //!    ```
@@ -99,7 +99,7 @@ use std::{
     time::Instant,
 };
 
-use crate::{spring::Motion, Animate, Spring};
+use crate::{animated::AnimationConfig, Animate, Animated};
 
 /// Helps manage animating styles for widgets.
 ///
@@ -112,21 +112,21 @@ pub struct AnimatedState<Status, Style> {
     /// This is in a `RefCell` so that the style can be updated in the `draw` function,
     /// where we have access to the current theme. The cell may contain `None` until the
     /// first render, when the style is created.
-    animated_style: RefCell<Option<Spring<Style>>>,
+    animated_style: RefCell<Option<Animated<Style>>>,
     /// The motion used by the animated style.
-    motion: Motion,
+    animation_config: AnimationConfig,
 }
 
 impl<Status, Style> AnimatedState<Status, Style>
 where
     Status: PartialEq,
-    Style: Animate + Clone + PartialEq,
+    Style: Animate,
 {
-    pub fn new(status: Status, motion: Motion) -> Self {
+    pub fn new(status: Status, animation_config: AnimationConfig) -> Self {
         Self {
             status,
             animated_style: RefCell::new(None),
-            motion,
+            animation_config,
         }
     }
 
@@ -135,12 +135,12 @@ where
     }
 
     /// Updates this animated state based on a potentially new `style` received by the widget.
-    pub fn diff(&mut self, motion: Motion) {
-        if self.motion != motion {
-            self.motion = motion;
+    pub fn diff(&mut self, animation_config: AnimationConfig) {
+        if self.animation_config != animation_config {
+            self.animation_config = animation_config;
             let mut animated_style = self.animated_style.borrow_mut();
             if let Some(style) = animated_style.as_mut() {
-                style.set_motion(motion);
+                style.apply(animation_config);
             }
         }
     }
@@ -153,7 +153,7 @@ where
             self.status = status;
             true
         } else if let Some(animated_style) = animated_style.as_ref() {
-            animated_style.has_energy()
+            animated_style.is_animating()
         } else {
             // No animated style yet.
             false
@@ -177,14 +177,6 @@ where
         }
     }
 
-    /// Causes the animation to immediately jump to the given `value`.
-    pub fn settle_at(&mut self, value: Style) {
-        let mut animated_style = self.animated_style.borrow_mut();
-        if let Some(animated_style) = animated_style.as_mut() {
-            animated_style.settle_at(value);
-        }
-    }
-
     /// Gets a reference to the animated style to use in a widget's `draw` function,
     /// using interior mutability to update the animation as necessary.
     ///
@@ -199,13 +191,11 @@ where
             let mut animated_style_ref = self.animated_style.borrow_mut();
             if let Some(animated_style) = animated_style_ref.as_mut() {
                 if animated_style.target() != &new_style {
-                    animated_style.interrupt(new_style);
+                    animated_style.set_target(new_style);
                 }
             } else {
                 // Create a new animated style if one doesn't exist.
-                let animated_style = Spring::new(new_style.clone())
-                    .with_motion(self.motion)
-                    .with_target(new_style);
+                let animated_style = Animated::new(new_style.clone(), self.animation_config);
                 animated_style_ref.replace(animated_style);
             }
         }

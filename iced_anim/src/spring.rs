@@ -108,8 +108,8 @@ where
         }
     }
 
-    /// Returns an updated spring with the given `target`.
-    pub fn with_target(mut self, target: T) -> Self {
+    /// Sets the `target` value of the spring and returns the updated spring.
+    pub fn to(mut self, target: T) -> Self {
         self.set_target(target);
         self
     }
@@ -207,14 +207,16 @@ where
     /// Causes the spring to settle immediately at the target value,
     /// ending any ongoing animation and setting the velocity to zero.
     pub fn settle(&mut self) {
+        // Setting the `value` to the `target` ensures that the value is exactly the target value,
+        // even if the curve doesn't reach it or the animation implementation isn't correct.
         self.value = self.target.clone();
         self.velocity = vec![0.0; T::components()];
     }
 
     /// Makes the spring value and target immediately settle at the given `value`.
-    pub fn settle_at(&mut self, value: T) {
-        self.value = value.clone();
-        self.target = value;
+    pub fn settle_at(&mut self, target: T) {
+        self.value = target.clone();
+        self.target = target;
         self.velocity = vec![0.0; T::components()];
     }
 
@@ -272,7 +274,7 @@ mod tests {
     /// Springs should have energy when the current value is not equal to the target.
     #[test]
     fn has_energy_when_target_is_not_current() {
-        let spring = Spring::new(0.0).with_target(5.0);
+        let spring = Spring::new(0.0).to(5.0);
         assert!(spring.has_energy());
     }
 
@@ -287,7 +289,7 @@ mod tests {
     /// and bring all velocity components to zero.
     #[test]
     fn settle_at() {
-        let mut spring = Spring::new(0.0).with_target(3.0);
+        let mut spring = Spring::new(0.0).to(3.0);
         spring.settle_at(5.0);
         assert_eq!(spring.value(), &5.0);
         assert_eq!(spring.target(), &5.0);
@@ -296,7 +298,7 @@ mod tests {
 
     #[test]
     fn tick_changes_value_and_last_update_time() {
-        let mut spring = Spring::new(0.0).with_target(1.0);
+        let mut spring = Spring::new(0.0).to(1.0);
         let now = Instant::now();
         spring.tick(now);
 
@@ -308,7 +310,7 @@ mod tests {
 
     #[test]
     fn set_target_changes_target_and_resets_last_update_time() {
-        let mut spring = Spring::new(0.0).with_target(1.0);
+        let mut spring = Spring::new(0.0).to(1.0);
 
         let now = Instant::now();
         spring.tick(now);
@@ -335,7 +337,7 @@ mod tests {
     /// duration between renders is much longer.
     #[test]
     fn set_target_does_not_reset_last_update_with_energy() {
-        let mut spring = Spring::new(0.0).with_target(10.0).with_velocity(vec![1.0]);
+        let mut spring = Spring::new(0.0).to(10.0).with_velocity(vec![1.0]);
         let update_time = Instant::now();
         spring.update(Event::Tick(update_time));
         spring.set_target(5.0);
@@ -347,7 +349,7 @@ mod tests {
     /// Calling `.settle()` should jump the spring's value to the target value.
     #[test]
     fn settle_sets_value_to_target() {
-        let mut spring = Spring::new(0.0).with_target(5.0);
+        let mut spring = Spring::new(0.0).to(5.0);
         spring.settle();
         assert_eq!(spring.value(), spring.target());
     }
@@ -355,7 +357,7 @@ mod tests {
     /// Calling `.settle()` should bring all velocity components to zero.
     #[test]
     fn settle_resets_velocity() {
-        let mut spring = Spring::new(0.0).with_target(5.0).with_velocity(vec![1.0]);
+        let mut spring = Spring::new(0.0).to(5.0).with_velocity(vec![1.0]);
         spring.settle();
         assert_eq!(spring.velocity, vec![0.0]);
     }
@@ -370,7 +372,7 @@ mod tests {
     /// A response of zero should imply the spring is near its target.
     #[test]
     fn is_near_end_with_zero_duration() {
-        let spring = Spring::new(0.0).with_target(1.0).with_motion(Motion {
+        let spring = Spring::new(0.0).to(1.0).with_motion(Motion {
             damping: 0.5,
             response: Duration::ZERO,
         });
@@ -380,7 +382,7 @@ mod tests {
     /// A spring with a response of zero should settle immediately.
     #[test]
     fn update_zero_response() {
-        let mut spring = Spring::new(0.0).with_target(1.0);
+        let mut spring = Spring::new(0.0).to(1.0);
         spring.set_motion(Motion {
             response: Duration::ZERO,
             damping: 0.5,

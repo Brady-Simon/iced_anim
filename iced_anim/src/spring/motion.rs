@@ -1,8 +1,7 @@
 //! Motion that defines how a spring animation will behave.
 use std::time::Duration;
 
-/// The default duration used by spring animations.
-pub const DEFAULT_DURATION: Duration = Duration::from_millis(500);
+use crate::animated::DEFAULT_DURATION;
 
 /// The motion associated with a spring animation.
 #[derive(Debug, Clone, Copy, PartialEq)]

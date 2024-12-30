@@ -1,10 +1,19 @@
-use std::time::{Duration, Instant};
+mod animation_config;
+mod animation_type;
+mod mode;
 
 use crate::{
     spring::Motion,
     transition::{Curve, Transition},
     Animate, Event, Spring,
 };
+pub use animation_config::AnimationConfig;
+pub use animation_type::AnimationType;
+pub use mode::Mode;
+use std::time::{Duration, Instant};
+
+/// The default duration used by animations.
+pub const DEFAULT_DURATION: Duration = Duration::from_millis(500);
 
 /// Designed to wrap an [`Animate`] value and enable animating changes to it.
 #[derive(Debug, Clone, PartialEq)]
@@ -13,60 +22,35 @@ pub struct Animated<T> {
     animation: AnimationType<T>,
 }
 
-/// The type of animation that will be used to animate a value.
-#[derive(Debug, Clone, PartialEq)]
-pub enum AnimationType<T> {
-    /// An animation that uses [`Spring`] physics to enable responsivity.
-    /// Use springs when the user is directly interacting with the animation
-    /// or if there is lots of motion in the animation that might often change
-    /// direction.
-    Spring(Spring<T>),
-    /// An animation that uses a [`Transition`] to animate between two values.
-    /// This is primarily a set of easing functions that can be used to animate
-    /// between two values and is good for predictable animations.
-    Transition(Transition<T>),
-}
-
-impl<T> From<Spring<T>> for AnimationType<T>
-where
-    T: Animate,
-{
-    fn from(value: Spring<T>) -> Self {
-        AnimationType::Spring(value)
-    }
-}
-
-impl<T> From<Transition<T>> for AnimationType<T>
-where
-    T: Animate,
-{
-    fn from(value: Transition<T>) -> Self {
-        AnimationType::Transition(value)
-    }
-}
-
 impl<T> Animated<T>
 where
     T: Animate,
 {
-    pub fn new(value: impl Into<AnimationType<T>>) -> Self {
-        Self {
-            animation: value.into(),
+    /// Creates a new [`Animated`] value based on the given [`AnimationConfig`].
+    pub fn new(value: T, config: AnimationConfig) -> Self {
+        match config.mode() {
+            Mode::Spring(motion) => Self::spring(value, motion).with_duration(config.duration()),
+            Mode::Transition(curve) => {
+                Self::transition(value, curve).with_duration(config.duration())
+            }
         }
     }
 
+    /// Creates a new [`Animated`] value using a [`Spring`] animation.
     pub fn spring(value: T, motion: Motion) -> Self {
         Self {
             animation: AnimationType::Spring(Spring::new(value).with_motion(motion)),
         }
     }
 
+    /// Creates a new [`Animated`] value using a [`Transition`] animation.
     pub fn transition(value: T, curve: Curve) -> Self {
         Self {
             animation: AnimationType::Transition(Transition::new(value).with_curve(curve)),
         }
     }
 
+    /// Sets the duration that the animation will last and returns the updated animation.
     pub fn with_duration(mut self, duration: Duration) -> Self {
         match &mut self.animation {
             AnimationType::Spring(spring) => {
@@ -81,6 +65,7 @@ where
         self
     }
 
+    /// Updates the animation based on some [`Event`] that occurred.
     pub fn update(&mut self, event: Event<T>) {
         match &mut self.animation {
             AnimationType::Spring(spring) => spring.update(event),
@@ -131,6 +116,46 @@ where
         self
     }
 
+    /// Returns the duration of the animation.
+    pub fn duration(&self) -> Duration {
+        match &self.animation {
+            AnimationType::Spring(spring) => spring.motion().duration(),
+            AnimationType::Transition(transition) => transition.duration(),
+        }
+    }
+
+    /// Applies the given `config` to this animation, updating any duration/motion/curve settings.
+    /// This will change
+    pub(crate) fn apply(&mut self, config: AnimationConfig) {
+        match config.mode() {
+            Mode::Spring(motion) => {
+                if let AnimationType::Spring(spring) = &mut self.animation {
+                    spring.set_motion(motion);
+                } else {
+                    let value = self.value().clone();
+                    let target = self.target().clone();
+                    self.animation =
+                        AnimationType::Spring(Spring::new(value).to(target).with_motion(motion));
+                }
+            }
+            Mode::Transition(curve) => {
+                if let AnimationType::Transition(transition) = &mut self.animation {
+                    transition.set_curve(curve);
+                } else {
+                    let value = self.value().clone();
+                    let target = self.target().clone();
+                    self.animation = AnimationType::Transition(
+                        Transition::new(value)
+                            .to(target)
+                            .with_curve(curve)
+                            .with_duration(self.duration()),
+                    );
+                }
+            }
+        }
+    }
+
+    /// Causes the animation to settle immediately at the target value, ending the animation.
     pub fn settle(&mut self) {
         match &mut self.animation {
             AnimationType::Spring(spring) => spring.settle(),
@@ -138,18 +163,11 @@ where
         }
     }
 
+    /// Updates the animation's current value based on the elapsed time since the last update.
     pub fn tick(&mut self, now: Instant) {
         match &mut self.animation {
             AnimationType::Spring(spring) => spring.tick(now),
             AnimationType::Transition(transition) => transition.tick(now),
-        }
-    }
-
-    /// Interrupts the existing animation and starts a new one with the new `target`.
-    pub fn interrupt(&mut self, target: T) {
-        match &mut self.animation {
-            AnimationType::Spring(spring) => spring.set_target(target),
-            AnimationType::Transition(transition) => transition.set_target(target),
         }
     }
 }
@@ -159,7 +177,9 @@ where
     T: Animate + Into<AnimationType<T>>,
 {
     fn from(value: T) -> Self {
-        Animated::new(value)
+        Self {
+            animation: value.into(),
+        }
     }
 }
 
@@ -168,6 +188,6 @@ where
     T: Animate + Default,
 {
     fn default() -> Self {
-        Animated::new(Transition::new(T::default()))
+        Animated::new(T::default(), AnimationConfig::default())
     }
 }

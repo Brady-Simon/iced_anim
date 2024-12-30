@@ -1,6 +1,6 @@
 //! An animated button that will automatically transition between different styles.
 use super::animated_state::AnimatedState;
-use crate::spring::Motion;
+use crate::animated::AnimationConfig;
 use iced::{
     advanced::{
         layout, renderer,
@@ -31,7 +31,7 @@ where
     padding: Padding,
     clip: bool,
     class: Theme::Class<'a>,
-    motion: Motion,
+    animation: AnimationConfig,
 }
 
 enum OnPress<'a, Message> {
@@ -65,7 +65,7 @@ where
             padding: DEFAULT_PADDING,
             clip: false,
             class: Theme::default(),
-            motion: Motion::default(),
+            animation: AnimationConfig::default(),
         }
     }
 
@@ -141,9 +141,9 @@ where
         self
     }
 
-    /// Sets the motion that will be used by animations.
-    pub fn motion(mut self, motion: Motion) -> Self {
-        self.motion = motion;
+    /// Sets the animation of the [`Button`].
+    pub fn animation(mut self, config: AnimationConfig) -> Self {
+        self.animation = config;
         self
     }
 
@@ -197,7 +197,7 @@ where
         // Initialize the state with the current style.
         let state = State {
             is_pressed: false,
-            animated_state: AnimatedState::new(status, self.motion),
+            animated_state: AnimatedState::new(status, self.animation),
         };
 
         tree::State::new(state)
@@ -210,7 +210,7 @@ where
     fn diff(&self, tree: &mut Tree) {
         // If the style changes from outside, then immediately update the style.
         let state = tree.state.downcast_mut::<State>();
-        state.animated_state.diff(self.motion);
+        state.animated_state.diff(self.animation);
         tree.diff_children(std::slice::from_ref(&self.content));
     }
 
