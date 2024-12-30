@@ -215,4 +215,19 @@ mod tests {
         transition.reverse();
         assert!(matches!(transition.progress, Progress::Forward(_)));
     }
+
+    /// [`Transition::is_animating`] should return `true` when the transition is still in progress.
+    #[test]
+    fn is_animating() {
+        let mut transition = Transition::new(0.0).to(1.0);
+        assert!(transition.is_animating());
+
+        let halfway = Instant::now() + DEFAULT_DURATION / 2;
+        transition.tick(halfway);
+        assert!(transition.is_animating());
+
+        let done = Instant::now() + DEFAULT_DURATION;
+        transition.tick(done);
+        assert!(!transition.is_animating());
+    }
 }

@@ -100,12 +100,19 @@ mod tests {
         assert_eq!(progress.value(), 0.75);
     }
 
-    /// [`Progress::settle`] should set the progress to the [`Progress::END`] value.
+    /// [`Progress::settle`] should set the progress to 1.0.
     #[test]
     fn settle() {
         let mut progress = Progress::Forward(0.5);
         progress.settle();
         assert_eq!(progress, Progress::Forward(1.0));
+    }
+
+    #[test]
+    fn settle_reverse() {
+        let mut progress = Progress::Reverse(0.5);
+        progress.settle();
+        assert_eq!(progress, Progress::Reverse(1.0));
     }
 
     /// [`Progress::is_complete`] should return `true` if the progress is `1.0`.
