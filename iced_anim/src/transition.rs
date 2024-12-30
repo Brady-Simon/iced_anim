@@ -103,10 +103,16 @@ where
         }
     }
 
+    /// Sets the `target` value of the transition, and returns the updated transition.
+    pub fn to(mut self, target: T) -> Self {
+        self.set_target(target);
+        self
+    }
+
     /// Interrupts the existing transition and starts a new one with the new `target`.
     pub fn set_target(&mut self, target: T) {
         // Don't do anything if the target hasn't changed.
-        if self.target == target {
+        if self.target() == &target {
             return;
         }
 
@@ -164,5 +170,49 @@ where
     /// Whether this transition is currently animating towards its target.
     pub fn is_animating(&self) -> bool {
         !self.progress.is_complete()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Various builder functions should behave as expected.
+    #[test]
+    fn initialization() {
+        let duration = Duration::from_millis(100);
+        let transition = Transition::new(0.0)
+            .to(1.0)
+            .with_curve(Curve::Ease)
+            .with_duration(duration);
+        assert_eq!(*transition.value(), 0.0);
+        assert_eq!(*transition.target(), 1.0);
+        assert_eq!(transition.curve, Curve::Ease);
+        assert_eq!(transition.duration, duration);
+    }
+
+    /// Transitions should be reversible such that changing targets in the middle of an
+    /// animation will reverse the animation if the target is the initial value.
+    #[test]
+    fn reversible_transitions() {
+        let mut transition = Transition::new(0.0).to(1.0);
+        let halfway = Instant::now() + DEFAULT_DURATION / 2;
+        let done = Instant::now() + DEFAULT_DURATION;
+
+        // Forward progress should maintain the `forward` direction.
+        transition.tick(halfway);
+        assert!(matches!(transition.progress, Progress::Forward(_)));
+
+        // Reversing the transition should change the direction.
+        transition.reverse();
+        assert!(matches!(transition.progress, Progress::Reverse(_)));
+
+        // The final result should have the initial value.
+        transition.tick(done);
+        assert_eq!(*transition.value(), 0.0);
+
+        // Reversing the transition again should change the direction back to forward.
+        transition.reverse();
+        assert!(matches!(transition.progress, Progress::Forward(_)));
     }
 }
