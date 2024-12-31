@@ -82,7 +82,7 @@ impl State {
                 .on_move(Message::MoveTo)
                 .into()
             })
-            .motion(Motion {
+            .animation(Motion {
                 response: Duration::from_millis(500),
                 damping: 0.6,
             })

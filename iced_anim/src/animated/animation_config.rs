@@ -63,6 +63,18 @@ impl Default for AnimationConfig {
     }
 }
 
+impl From<Motion> for AnimationConfig {
+    fn from(motion: Motion) -> Self {
+        Self::spring(motion)
+    }
+}
+
+impl From<Curve> for AnimationConfig {
+    fn from(curve: Curve) -> Self {
+        Self::transition(curve)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -77,5 +89,23 @@ mod tests {
                 duration: DEFAULT_DURATION
             }
         );
+    }
+
+    #[test]
+    fn from_motion() {
+        let motion = Motion::SMOOTH;
+        let config = AnimationConfig::from(motion);
+
+        assert_eq!(config.mode(), Mode::Spring(motion));
+        assert_eq!(config.duration(), motion.duration());
+    }
+
+    #[test]
+    fn from_curve() {
+        let curve = Curve::EaseInOut;
+        let config = AnimationConfig::from(curve);
+
+        assert_eq!(config.mode(), Mode::Transition(curve));
+        assert_eq!(config.duration(), DEFAULT_DURATION);
     }
 }

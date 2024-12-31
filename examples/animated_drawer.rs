@@ -112,7 +112,7 @@ fn drawer<'a>(
                 .padding(Padding::new(0.0).right(width + PADDING))
                 .into()
             })
-            .motion(motion)
+            .animation(motion)
             .animates_layout(true),
         )
         .push(
@@ -143,7 +143,7 @@ fn drawer<'a>(
                 .into()
             })
             .animates_layout(true)
-            .motion(motion),
+            .animation(motion),
         );
 
     container(drawer_stack)

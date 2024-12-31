@@ -100,7 +100,7 @@ impl State {
                 .center(Length::Fill)
                 .into()
             })
-            .motion(self.preview_motion.motion)
+            .animation(self.preview_motion.motion)
             .animates_layout(true),
         )
         .center(Length::Fill);

@@ -72,6 +72,7 @@
 //! Use the `Animation` widget if you need any of these properties.
 //!
 //! If these limitations apply to you, consider using the `Animation` widget instead.
+use crate::{animate::Animate, animated::AnimationConfig, Animated};
 use iced::{
     advanced::{
         graphics::core::event,
@@ -81,8 +82,6 @@ use iced::{
     },
     Element,
 };
-
-use crate::{animate::Animate, spring::Motion, Spring};
 
 /// A widget that implicitly animates a value anytime it changes.
 ///
@@ -94,10 +93,12 @@ pub struct AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
 {
+    /// The target value to animate to.
+    target: T,
     /// The function that builds the element using the animated value.
     builder: Box<dyn Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a>,
-    /// The spring that animates the value of this widget.
-    spring: Spring<T>,
+    /// The configuration for how to animate the value.
+    config: AnimationConfig,
     /// Whether the layout will be affected by the animated value.
     animates_layout: bool,
     /// Whether animations are disabled, in which case the value will be updated
@@ -113,22 +114,23 @@ where
 {
     /// Creates a new `AnimationBuilder` with the given value and builder function.
     pub fn new(
-        value: T,
+        target: T,
         builder: impl Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a,
     ) -> Self {
-        let element = (builder)(value.clone());
+        let element = (builder)(target.clone());
         Self {
+            target,
             builder: Box::new(builder),
             cached_element: element,
-            spring: Spring::new(value),
+            config: AnimationConfig::default(),
             animates_layout: false,
             is_disabled: false,
         }
     }
 
-    /// Defines the way the spring will animate the value.
-    pub fn motion(mut self, motion: Motion) -> Self {
-        self.spring = self.spring.with_motion(motion);
+    /// Defines the way the value will animate.
+    pub fn animation(mut self, config: impl Into<AnimationConfig>) -> Self {
+        self.config = config.into();
         self
     }
 
@@ -164,6 +166,11 @@ where
     }
 }
 
+struct State<T> {
+    animation: Animated<T>,
+    config: AnimationConfig,
+}
+
 impl<'a, T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
     for AnimationBuilder<'a, T, Message, Theme, Renderer>
 where
@@ -175,26 +182,30 @@ where
     }
 
     fn state(&self) -> tree::State {
-        tree::State::new(self.spring.clone())
+        tree::State::new(State {
+            animation: Animated::new(self.target.clone(), self.config),
+            config: self.config,
+        })
     }
 
     fn tag(&self) -> tree::Tag {
-        tree::Tag::of::<Spring<T>>()
+        tree::Tag::of::<State<T>>()
     }
 
     fn diff(&self, tree: &mut Tree) {
         // Update the spring's target if it has changed
-        let spring = tree.state.downcast_mut::<Spring<T>>();
-        if spring.target() != self.spring.value() {
+        let state = tree.state.downcast_mut::<State<T>>();
+        if state.animation.target() != &self.target {
             if self.is_disabled {
-                spring.settle();
+                state.animation.settle();
             } else {
-                spring.set_target(self.spring.target().clone());
+                state.animation.set_target(self.target.clone());
             }
         }
 
-        if spring.motion() != self.spring.motion() {
-            spring.set_motion(self.spring.motion())
+        if state.config != self.config {
+            state.config = self.config;
+            state.animation.apply(self.config);
         }
 
         tree.diff_children(std::slice::from_ref(&self.cached_element));
@@ -309,10 +320,10 @@ where
             return status;
         };
 
-        let spring = tree.state.downcast_mut::<Spring<T>>();
+        let state = tree.state.downcast_mut::<State<T>>();
 
         // Request a redraw if the spring has remaining energy
-        if spring.has_energy() {
+        if state.animation.is_animating() {
             shell.request_redraw(iced::window::RedrawRequest::NextFrame);
             // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {
@@ -320,8 +331,8 @@ where
             }
 
             // Update the animation and request a redraw
-            spring.tick(now);
-            self.cached_element = (self.builder)(spring.value().clone());
+            state.animation.tick(now);
+            self.cached_element = (self.builder)(state.animation.value().clone());
         }
 
         status
