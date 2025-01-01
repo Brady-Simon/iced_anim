@@ -51,7 +51,7 @@
 //! 3. Add an `AnimatedState<Status, Style>` field to your widget's state. For example,
 //!    a button state might look like this:
 //!    ```no_run
-//!    # use iced_anim::widget::AnimatedState;
+//!    # use iced_anim::AnimatedState;
 //!    # type Status = iced::widget::button::Status;
 //!    # type Style = iced::widget::button::Style;
 //!    #[derive(Debug)]
@@ -180,6 +180,14 @@ where
         let mut animated_value = self.animated_value.borrow_mut();
         if let Some(animated_value) = animated_value.as_mut() {
             animated_value.settle();
+        }
+    }
+
+    /// Causes the animation to immediately jump to the given `value`.
+    pub fn settle_at(&mut self, value: Value) {
+        let mut animated_value = self.animated_value.borrow_mut();
+        if let Some(animated_value) = animated_value.as_mut() {
+            animated_value.settle_at(value);
         }
     }
 

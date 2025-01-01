@@ -1,7 +1,5 @@
 //! An animated button that will automatically transition between different styles.
-use crate::animated::Mode;
-
-use super::animated_state::AnimatedState;
+use crate::{animated::Mode, AnimatedState};
 use iced::{
     advanced::{
         layout, renderer,

@@ -1,13 +1,11 @@
 //! Svg widgets display vector graphics in your application.
-use crate::animated::Mode;
-
-use super::AnimatedState;
-use iced::advanced::{
-    layout, renderer,
-    widget::{tree, Tree},
-};
+use crate::{animated::Mode, AnimatedState};
 use iced::{
-    advanced::{svg, Layout, Widget},
+    advanced::{
+        layout, renderer, svg,
+        widget::{tree, Tree},
+        Layout, Widget,
+    },
     mouse::{self, Cursor},
     window, ContentFit, Element, Event, Length, Point, Rectangle, Rotation, Size, Vector,
 };
