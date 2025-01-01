@@ -127,11 +127,11 @@ where
     Value: Animate,
 {
     /// Creates a new [`AnimatedState`] with the given `status` and animation `mode`.
-    pub fn new(status: Status, mode: Mode) -> Self {
+    pub fn new(status: Status, mode: impl Into<Mode>) -> Self {
         Self {
             status,
             animated_value: RefCell::new(None),
-            mode,
+            mode: mode.into(),
         }
     }
 
