@@ -265,3 +265,14 @@ AnimationBuilder::new(self.size, |size| {
 Refer to the `examples` directory for a variety of ways to use this crate.
 You can also run these examples locally with `cargo run --example <package>`,
 e.g. `cargo run --example animated_color`.
+
+## Breaking Changes
+
+### 0.1 -> 0.2
+
+- Introduced the `Animated` API, which encompasses both springs and transitions
+- `Animation` widget now takes an `Animated` value instead of a `Spring`
+- Renamed `SpringMotion` to `Motion` under the `iced_anim::spring` module
+- Moved `AnimatedState` to the top-level module instead of the `widget` module
+- Replaced `.motion()` functions with `.animation()` functions that take a new 
+  `iced_anim::animated::Mode` that allows configuring springs or transitions
