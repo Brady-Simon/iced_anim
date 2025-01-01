@@ -1,6 +1,7 @@
 //! A type of animation that transitions between two values by following a curve.
 pub mod bezier;
 pub mod curve;
+mod easing;
 mod progress;
 
 use crate::{animated::DEFAULT_DURATION, Animate, Event};
@@ -100,6 +101,13 @@ where
             Progress::Forward(_) => self.value = self.target.clone(),
             Progress::Reverse(_) => self.value = self.initial.clone(),
         }
+    }
+
+    /// Makes the transition immediately settle at the given `target`.
+    pub fn settle_at(&mut self, target: T) {
+        self.value = target.clone();
+        self.target = target;
+        self.progress = Progress::Forward(1.0);
     }
 
     /// Updates the transition with details of the given `event`.
@@ -240,5 +248,16 @@ mod tests {
         let done = Instant::now() + DEFAULT_DURATION;
         transition.tick(done);
         assert!(!transition.is_animating());
+    }
+
+    /// [`Transition::settle_at`] should jump the transition to the given value.
+    #[test]
+    fn settle_at() {
+        let mut transition = Transition::new(0.0).to(1.0);
+        transition.settle_at(0.5);
+        assert_eq!(*transition.value(), 0.5);
+        assert_eq!(*transition.target(), 0.5);
+        assert!(!transition.is_animating());
+        assert_eq!(transition.progress, Progress::Forward(1.0));
     }
 }

@@ -65,7 +65,7 @@ impl Progress {
         }
     }
 
-    /// Settles this transition, setting the state to Idle.
+    /// Moves the progress to the end of the transition, i.e. 1.0.
     pub fn settle(&mut self) {
         match self {
             Self::Forward(progress) => *progress = 1.0,

@@ -163,6 +163,14 @@ where
         }
     }
 
+    /// Makes the animation immediately settle at the given `value`.
+    pub fn settle_at(&mut self, target: T) {
+        match &mut self.animation {
+            AnimationType::Spring(spring) => spring.settle_at(target),
+            AnimationType::Transition(transition) => transition.settle_at(target),
+        }
+    }
+
     /// Updates the animation's current value based on the elapsed time since the last update.
     pub fn tick(&mut self, now: Instant) {
         match &mut self.animation {

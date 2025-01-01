@@ -213,7 +213,7 @@ where
         self.velocity = vec![0.0; T::components()];
     }
 
-    /// Makes the spring value and target immediately settle at the given `value`.
+    /// Makes the spring value and target immediately settle at the given `target`.
     pub fn settle_at(&mut self, target: T) {
         self.value = target.clone();
         self.target = target;
