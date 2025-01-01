@@ -54,7 +54,7 @@ impl Easing {
 
     /// A default easing that uses [`Curve::EaseOut`] and the default duration.
     pub const EASE_OUT: Self = Self {
-        curve: Curve::EaseIn,
+        curve: Curve::EaseOut,
         duration: DEFAULT_DURATION,
         reversible: false,
     };
@@ -102,6 +102,15 @@ impl Easing {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn const_easings() {
+        assert_eq!(Easing::LINEAR.curve, Curve::Linear);
+        assert_eq!(Easing::EASE.curve, Curve::Ease);
+        assert_eq!(Easing::EASE_IN.curve, Curve::EaseIn);
+        assert_eq!(Easing::EASE_OUT.curve, Curve::EaseOut);
+        assert_eq!(Easing::EASE_IN_OUT.curve, Curve::EaseInOut);
+    }
 
     #[test]
     fn default() {
