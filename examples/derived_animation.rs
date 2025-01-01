@@ -2,8 +2,8 @@ use iced::{
     widget::{button, column, container, text},
     Border, Color, Element, Length,
 };
-use iced_anim::Animate;
 use iced_anim::AnimationBuilder;
+use iced_anim::{transition::Easing, Animate};
 
 /// A custom struct with all animatable properties that derives `Animate`
 #[derive(Animate, Clone, Debug, PartialEq)]
@@ -78,7 +78,8 @@ impl State {
             .center_y(Length::Fixed(rectangle.height))
             .into()
         })
-        .animates_layout(true);
+        .animates_layout(true)
+        .animation(Easing::EASE);
 
         let label = text("Animated rectangle");
 
