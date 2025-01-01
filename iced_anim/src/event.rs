@@ -1,29 +1,28 @@
-//! An event associated with an animated `Spring` value.
+//! An event associated with an [`crate::Animated`] value.
 //!
 //! Spring events can represent three general types of events:
-//! - A tick event that updates the spring's value
-//! - A target event that sets the spring's target value
+//! - A tick event that updates the animated value
+//! - A target event that sets the animated target value
 //! - A settle event that ends the animation early.
 //!
-//! This event can be passed to `Spring::update` to update the spring's value.
-//! You can also use the `From` impl to create a `SpringEvent::Target` from a
+//! This event can be passed to [`crate::Animated::update`] to update the current value.
+//! You can also use the `From` impl to create a [`Event::Target`] from a
 //! value, e.g. `Message::ChangeSize(5.0.into())` instead of
-//! `Message::ChangeSize(SpringEvent::Target(5.0))`.
+//! `Message::ChangeSize(Event::Target(5.0))`.
 //!
 //! ```rust
-//! # use iced_anim::{Spring, SpringEvent};
-//! let mut spring_1 = Spring::new(0.0);
-//! spring_1.update(SpringEvent::Target(5.0));
+//! # use iced_anim::{Animated, spring::Motion, Event};
+//! let mut spring_1 = Animated::spring(0.0, Motion::default());
+//! spring_1.update(Event::Target(5.0));
 //!
-//! let mut spring_2 = Spring::new(0.0);
+//! let mut spring_2 = Animated::spring(0.0, Motion::default());
 //! spring_2.update(5.0.into());
 //!
 //! assert_eq!(spring_1.target(), &5.0);
 //! assert_eq!(spring_2.target(), &5.0);
 //! ```
-use std::time::Instant;
-
 use crate::Animate;
+use std::time::Instant;
 
 /// An event associated with an animated `Spring` value.
 ///
@@ -35,9 +34,9 @@ use crate::Animate;
 /// - A settle event that ends the animation early by jumping to the target
 ///   value.
 ///
-/// This event can be passed to `Spring::update` to update the spring's value.
+/// This event can be passed to [`crate::Animated::update`] to update the spring's value.
 #[derive(Debug, Clone, PartialEq)]
-pub enum SpringEvent<T> {
+pub enum Event<T> {
     /// A tick event that updates the spring's value, e.g. a frame is rendered
     /// and the spring's value should be updated.
     Tick(Instant),
@@ -49,16 +48,16 @@ pub enum SpringEvent<T> {
     Settle,
 }
 
-// Impl `Copy` for `SpringEvent` when `T` is `Copy`.
-impl<T> Copy for SpringEvent<T> where T: Copy {}
+// Impl `Copy` for `Event` when `T` is `Copy`.
+impl<T> Copy for Event<T> where T: Copy {}
 
-// Any `From` usages should return a `SpringEvent::Target` variant.
-impl<T> From<T> for SpringEvent<T>
+// Any `From` usages should return a `Event::Target` variant.
+impl<T> From<T> for Event<T>
 where
     T: Animate,
 {
     fn from(value: T) -> Self {
-        SpringEvent::Target(value)
+        Event::Target(value)
     }
 }
 
@@ -66,21 +65,21 @@ where
 mod tests {
     use super::*;
 
-    /// The `from` impl should return a `SpringEvent::Target` variant
-    /// to allow users to do `5.0.into()` to create a `SpringEvent::Target`.
+    /// The `from` impl should return a [`Event::Target`] variant
+    /// to allow users to do `5.0.into()` to create a [`Event::Target`].
     ///
     /// This should slightly reduce the amount of boilerplate needed to
-    /// create a `SpringEvent::Target` from a value.
+    /// create a [`Event::Target`] from a value.
     #[test]
     fn from_impl_sets_target() {
-        let update = SpringEvent::from(5.0);
-        assert!(matches!(update, SpringEvent::Target(5.0)));
+        let update = Event::from(5.0);
+        assert!(matches!(update, Event::Target(5.0)));
     }
 
-    /// `SpringEvent` should implement `Copy` when `T` does.
+    /// [`Event`] should implement `Copy` when `T` does.
     #[test]
     fn copy_impl() {
-        let update = SpringEvent::from(5.0);
+        let update = Event::from(5.0);
         let copy = update;
         assert_eq!(update, copy);
     }

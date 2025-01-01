@@ -46,29 +46,31 @@
 //!
 //! ## Controlling the spring motion
 //!
-//! The spring motion of an [`AnimationBuilder`] can be customized. There are a few
-//! defaults like [`SpringMotion::Smooth`] and [`SpringMotion::Bouncy`], but you can
-//! provide a custom response and damping fraction with [`SpringMotion::Custom`].
+//! The spring motion of an [`AnimationBuilder`] can be customized. There are some presets like
+//! [`spring::Motion::smooth`] and [`spring::Motion::bouncy`], but you can also create your own.
 //!
 //! ## Supported Iced versions
 //!
 //! This crate supports Iced 0.13 and newer.
 pub mod animate;
+pub mod animated;
+mod animated_state;
 pub mod animation;
 pub mod animation_builder;
+pub mod event;
 pub mod spring;
-pub mod spring_event;
-pub mod spring_motion;
-
+pub mod transition;
 #[cfg(feature = "widgets")]
 pub mod widget;
 
 pub use animate::Animate;
+pub use animated::{Animated, AnimationType};
+pub use animated_state::AnimatedState;
 pub use animation::Animation;
 pub use animation_builder::*;
+pub use event::Event;
 pub use spring::Spring;
-pub use spring_event::SpringEvent;
-pub use spring_motion::SpringMotion;
+pub use transition::Transition;
 
 #[cfg(feature = "derive")]
 pub use iced_anim_derive::Animate;

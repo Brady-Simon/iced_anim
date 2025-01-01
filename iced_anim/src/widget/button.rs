@@ -1,6 +1,5 @@
 //! An animated button that will automatically transition between different styles.
-use super::animated_state::AnimatedState;
-use crate::SpringMotion;
+use crate::{animated::Mode, AnimatedState};
 use iced::{
     advanced::{
         layout, renderer,
@@ -31,7 +30,7 @@ where
     padding: Padding,
     clip: bool,
     class: Theme::Class<'a>,
-    motion: SpringMotion,
+    mode: Mode,
 }
 
 enum OnPress<'a, Message> {
@@ -65,7 +64,7 @@ where
             padding: DEFAULT_PADDING,
             clip: false,
             class: Theme::default(),
-            motion: SpringMotion::default(),
+            mode: Mode::default(),
         }
     }
 
@@ -141,9 +140,9 @@ where
         self
     }
 
-    /// Sets the motion that will be used by animations.
-    pub fn motion(mut self, motion: SpringMotion) -> Self {
-        self.motion = motion;
+    /// Sets the animation of the [`Button`].
+    pub fn animation(mut self, mode: impl Into<Mode>) -> Self {
+        self.mode = mode.into();
         self
     }
 
@@ -197,7 +196,7 @@ where
         // Initialize the state with the current style.
         let state = State {
             is_pressed: false,
-            animated_state: AnimatedState::new(status, self.motion),
+            animated_state: AnimatedState::new(status, self.mode),
         };
 
         tree::State::new(state)
@@ -210,7 +209,7 @@ where
     fn diff(&self, tree: &mut Tree) {
         // If the style changes from outside, then immediately update the style.
         let state = tree.state.downcast_mut::<State>();
-        state.animated_state.diff(self.motion);
+        state.animated_state.diff(self.mode);
         tree.diff_children(std::slice::from_ref(&self.content));
     }
 
@@ -350,7 +349,7 @@ where
 
         let style = state
             .animated_state
-            .current_style(|status| theme.style(&self.class, *status));
+            .current_value(|status| theme.style(&self.class, *status));
 
         if style.background.is_some() || style.border.width > 0.0 || style.shadow.color.a > 0.0 {
             renderer.fill_quad(

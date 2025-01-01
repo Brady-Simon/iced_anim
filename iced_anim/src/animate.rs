@@ -6,7 +6,7 @@
 //! You can implement this trait for custom types using the "derive" feature.
 use std::sync::Arc;
 
-use iced::theme::palette;
+use iced::{theme::palette, Theme};
 
 /// A trait for types that can be animated on a per-property basis.
 ///
@@ -36,6 +36,12 @@ pub trait Animate: Clone + PartialEq {
     /// This distance can be positive or negative and returns a vector that should be consistent
     /// with `Animate::components` and the update order in `Animate::update`.
     fn distance_to(&self, end: &Self) -> Vec<f32>;
+
+    /// Linearly interpolate between two values based on a progress ratio.
+    ///
+    /// The `start` value is the initial value, the `end` value is the target value, and `progress`
+    /// is a value between 0.0 and 1.0 representing the interpolation progress.
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32);
 }
 
 impl Animate for f32 {
@@ -49,6 +55,10 @@ impl Animate for f32 {
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
         vec![self - end]
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        *self = start + (end - start) * progress
     }
 }
 
@@ -64,6 +74,11 @@ impl Animate for iced::Point<f32> {
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
         [self.x.distance_to(&end.x), self.y.distance_to(&end.y)].concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.x.lerp(&start.x, &end.x, progress);
+        self.y.lerp(&start.y, &end.y, progress);
     }
 }
 
@@ -87,6 +102,13 @@ impl Animate for iced::Color {
             self.a.distance_to(&end.a),
         ]
         .concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.r.lerp(&start.r, &end.r, progress);
+        self.g.lerp(&start.g, &end.g, progress);
+        self.b.lerp(&start.b, &end.b, progress);
+        self.a.lerp(&start.a, &end.a, progress);
     }
 }
 
@@ -113,9 +135,18 @@ impl Animate for iced::theme::Palette {
         ]
         .concat()
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.background
+            .lerp(&start.background, &end.background, progress);
+        self.text.lerp(&start.text, &end.text, progress);
+        self.primary.lerp(&start.primary, &end.primary, progress);
+        self.success.lerp(&start.success, &end.success, progress);
+        self.danger.lerp(&start.danger, &end.danger, progress);
+    }
 }
 
-impl Animate for iced::Theme {
+impl Animate for Theme {
     fn components() -> usize {
         iced::theme::Palette::components() + iced::theme::palette::Extended::components()
     }
@@ -127,7 +158,7 @@ impl Animate for iced::Theme {
         let mut extended = *self.extended_palette();
         extended.update(components);
 
-        *self = iced::Theme::Custom(Arc::new(iced::theme::Custom::with_fn(
+        *self = Theme::Custom(Arc::new(iced::theme::Custom::with_fn(
             "Animating Theme".to_owned(),
             palette,
             move |_| extended,
@@ -140,6 +171,20 @@ impl Animate for iced::Theme {
             self.extended_palette().distance_to(end.extended_palette()),
         ]
         .concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        let mut palette = start.palette();
+        palette.lerp(&start.palette(), &end.palette(), progress);
+
+        let mut extended = *start.extended_palette();
+        extended.lerp(start.extended_palette(), end.extended_palette(), progress);
+
+        *self = Theme::Custom(Arc::new(iced::theme::Custom::with_fn(
+            "Animating Theme".to_owned(),
+            palette,
+            move |_| extended,
+        )));
     }
 }
 
@@ -159,6 +204,11 @@ impl Animate for palette::Pair {
             self.text.distance_to(&end.text),
         ]
         .concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.color.lerp(&start.color, &end.color, progress);
+        self.text.lerp(&start.text, &end.text, progress);
     }
 }
 
@@ -181,6 +231,12 @@ impl Animate for palette::Primary {
         ]
         .concat()
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.strong.lerp(&start.strong, &end.strong, progress);
+        self.base.lerp(&start.base, &end.base, progress);
+        self.weak.lerp(&start.weak, &end.weak, progress);
+    }
 }
 
 impl Animate for palette::Secondary {
@@ -201,6 +257,12 @@ impl Animate for palette::Secondary {
             self.weak.distance_to(&end.weak),
         ]
         .concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.strong.lerp(&start.strong, &end.strong, progress);
+        self.base.lerp(&start.base, &end.base, progress);
+        self.weak.lerp(&start.weak, &end.weak, progress);
     }
 }
 
@@ -223,6 +285,12 @@ impl Animate for palette::Success {
         ]
         .concat()
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.strong.lerp(&start.strong, &end.strong, progress);
+        self.base.lerp(&start.base, &end.base, progress);
+        self.weak.lerp(&start.weak, &end.weak, progress);
+    }
 }
 
 impl Animate for palette::Danger {
@@ -244,6 +312,12 @@ impl Animate for palette::Danger {
         ]
         .concat()
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.strong.lerp(&start.strong, &end.strong, progress);
+        self.base.lerp(&start.base, &end.base, progress);
+        self.weak.lerp(&start.weak, &end.weak, progress);
+    }
 }
 
 impl Animate for palette::Background {
@@ -264,6 +338,12 @@ impl Animate for palette::Background {
             self.weak.distance_to(&end.weak),
         ]
         .concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.strong.lerp(&start.strong, &end.strong, progress);
+        self.base.lerp(&start.base, &end.base, progress);
+        self.weak.lerp(&start.weak, &end.weak, progress);
     }
 }
 
@@ -294,6 +374,21 @@ impl Animate for palette::Extended {
         ]
         .concat()
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.is_dark = if progress >= 0.5 {
+            end.is_dark
+        } else {
+            start.is_dark
+        };
+        self.primary.lerp(&start.primary, &end.primary, progress);
+        self.secondary
+            .lerp(&start.secondary, &end.secondary, progress);
+        self.success.lerp(&start.success, &end.success, progress);
+        self.danger.lerp(&start.danger, &end.danger, progress);
+        self.background
+            .lerp(&start.background, &end.background, progress);
+    }
 }
 
 impl<T> Animate for Option<T>
@@ -316,6 +411,15 @@ where
         match (self, end) {
             (Some(current), Some(end)) => current.distance_to(end),
             _ => vec![0.0; T::components()],
+        }
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        // TODO: Maybe figure out something better here. Potentially only use Option with Default impls if missing.
+        if let (Some(start), Some(end)) = (start, end) {
+            if let Some(value) = self.as_mut() {
+                value.lerp(start, end, progress);
+            }
         }
     }
 }
@@ -341,6 +445,16 @@ impl Animate for iced::border::Radius {
         self.bottom_left.update(components);
         self.bottom_right.update(components);
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.top_left.lerp(&start.top_left, &end.top_left, progress);
+        self.top_right
+            .lerp(&start.top_right, &end.top_right, progress);
+        self.bottom_left
+            .lerp(&start.bottom_left, &end.bottom_left, progress);
+        self.bottom_right
+            .lerp(&start.bottom_right, &end.bottom_right, progress);
+    }
 }
 
 impl Animate for iced::Border {
@@ -362,6 +476,12 @@ impl Animate for iced::Border {
         self.color.update(components);
         self.radius.update(components);
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.width.lerp(&start.width, &end.width, progress);
+        self.color.lerp(&start.color, &end.color, progress);
+        self.radius.lerp(&start.radius, &end.radius, progress);
+    }
 }
 
 impl<T> Animate for iced::Vector<T>
@@ -379,6 +499,11 @@ where
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
         self.x.update(components);
         self.y.update(components);
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.x.lerp(&start.x, &end.x, progress);
+        self.y.lerp(&start.y, &end.y, progress);
     }
 }
 
@@ -401,6 +526,11 @@ where
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
         self.width.update(components);
         self.height.update(components);
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.width.lerp(&start.width, &end.width, progress);
+        self.height.lerp(&start.height, &end.height, progress);
     }
 }
 
@@ -428,6 +558,13 @@ where
         self.width.update(components);
         self.height.update(components);
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.x.lerp(&start.x, &end.x, progress);
+        self.y.lerp(&start.y, &end.y, progress);
+        self.width.lerp(&start.width, &end.width, progress);
+        self.height.lerp(&start.height, &end.height, progress);
+    }
 }
 
 impl Animate for iced::Shadow {
@@ -449,6 +586,13 @@ impl Animate for iced::Shadow {
         self.offset.update(components);
         self.blur_radius.update(components);
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.color.lerp(&start.color, &end.color, progress);
+        self.offset.lerp(&start.offset, &end.offset, progress);
+        self.blur_radius
+            .lerp(&start.blur_radius, &end.blur_radius, progress);
+    }
 }
 
 impl Animate for iced::Radians {
@@ -462,6 +606,10 @@ impl Animate for iced::Radians {
 
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
         self.0.update(components);
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.0.lerp(&start.0, &end.0, progress);
     }
 }
 
@@ -481,6 +629,11 @@ impl Animate for iced::gradient::ColorStop {
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
         self.offset.update(components);
         self.color.update(components);
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.offset.lerp(&start.offset, &end.offset, progress);
+        self.color.lerp(&start.color, &end.color, progress);
     }
 }
 
@@ -502,6 +655,12 @@ where
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
         for item in self.iter_mut() {
             item.update(components);
+        }
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        for (item, (start, end)) in self.iter_mut().zip(start.iter().zip(end.iter())) {
+            item.lerp(start, end, progress);
         }
     }
 }
@@ -526,6 +685,18 @@ impl Animate for iced::gradient::Linear {
             stop.update(components);
         }
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.angle.lerp(&start.angle, &end.angle, progress);
+
+        for (stop, (start, end)) in self
+            .stops
+            .iter_mut()
+            .zip(start.stops.iter().zip(end.stops.iter()))
+        {
+            stop.lerp(start, end, progress);
+        }
+    }
 }
 
 impl Animate for iced::Gradient {
@@ -542,6 +713,18 @@ impl Animate for iced::Gradient {
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
         match self {
             iced::Gradient::Linear(start) => start.update(components),
+        }
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        match (self, start, end) {
+            (
+                iced::Gradient::Linear(value),
+                iced::Gradient::Linear(start),
+                iced::Gradient::Linear(end),
+            ) => {
+                value.lerp(start, end, progress);
+            }
         }
     }
 }
@@ -582,6 +765,26 @@ impl Animate for iced::Background {
             iced::Background::Gradient(gradient) => gradient.update(components),
         }
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        match (self, start, end) {
+            (
+                iced::Background::Color(value),
+                iced::Background::Color(start),
+                iced::Background::Color(end),
+            ) => {
+                value.lerp(start, end, progress);
+            }
+            (
+                iced::Background::Gradient(value),
+                iced::Background::Gradient(start),
+                iced::Background::Gradient(end),
+            ) => {
+                value.lerp(start, end, progress);
+            }
+            _ => {}
+        }
+    }
 }
 
 impl Animate for iced::widget::button::Style {
@@ -608,6 +811,15 @@ impl Animate for iced::widget::button::Style {
         self.border.update(components);
         self.shadow.update(components);
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.background
+            .lerp(&start.background, &end.background, progress);
+        self.text_color
+            .lerp(&start.text_color, &end.text_color, progress);
+        self.border.lerp(&start.border, &end.border, progress);
+        self.shadow.lerp(&start.shadow, &end.shadow, progress);
+    }
 }
 
 impl Animate for iced::widget::svg::Style {
@@ -621,6 +833,10 @@ impl Animate for iced::widget::svg::Style {
 
     fn update(&mut self, components: &mut impl Iterator<Item = f32>) {
         self.color.update(components);
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.color.lerp(&start.color, &end.color, progress);
     }
 }
 
@@ -640,6 +856,11 @@ where
 
     fn distance_to(&self, end: &Self) -> Vec<f32> {
         [self.0.distance_to(&end.0), self.1.distance_to(&end.1)].concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.0.lerp(&start.0, &end.0, progress);
+        self.1.lerp(&start.1, &end.1, progress);
     }
 }
 
@@ -666,6 +887,12 @@ where
             self.2.distance_to(&end.2),
         ]
         .concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.0.lerp(&start.0, &end.0, progress);
+        self.1.lerp(&start.1, &end.1, progress);
+        self.2.lerp(&start.2, &end.2, progress);
     }
 }
 
@@ -695,6 +922,13 @@ where
             self.3.distance_to(&end.3),
         ]
         .concat()
+    }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        self.0.lerp(&start.0, &end.0, progress);
+        self.1.lerp(&start.1, &end.1, progress);
+        self.2.lerp(&start.2, &end.2, progress);
+        self.3.lerp(&start.3, &end.3, progress);
     }
 }
 
@@ -780,7 +1014,7 @@ mod tests {
     #[test]
     fn theme_components() {
         assert_eq!(
-            iced::Theme::components(),
+            Theme::components(),
             iced::theme::Palette::components() + iced::theme::palette::Extended::components()
         );
     }
@@ -814,7 +1048,7 @@ mod tests {
     #[test]
     fn update_background() {
         let mut background = iced::Background::Color(iced::Color::BLACK);
-        let components = vec![0.1 as f32; iced::Background::components()];
+        let components = vec![0.1_f32; iced::Background::components()];
         let mut components = components.iter().copied();
         background.update(&mut components);
         assert_ne!(background, iced::Background::Color(iced::Color::BLACK));
@@ -837,7 +1071,7 @@ mod tests {
         };
 
         let mut spring = crate::Spring::new(style);
-        spring.interrupt(target);
+        spring.set_target(target);
         spring.tick(std::time::Instant::now());
         assert_ne!(*spring.value(), style);
     }

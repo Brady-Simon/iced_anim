@@ -15,12 +15,10 @@
 //!   only be an [`iced::Color`] and not an [`iced::Gradient`]. Use default or empty values like
 //!   [`iced::Color::TRANSPARENT`] in place of [`None`] to ensure optional values are animated,
 //!   since [`None`] counts as a different variant.
-//! - You can disable animations by passing a [`SpringMotion`] with a duration of `0.0` to the
+//! - You can disable animations by passing a [`Motion`] with a duration of `0.0` to the
 //!   `motion` method, but there may be a more ergonomic way to do this in the future.
-pub mod animated_state;
 pub mod button;
 pub mod svg;
 
-pub use animated_state::AnimatedState;
 pub use button::{button, Button};
 pub use svg::{svg, Svg};

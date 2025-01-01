@@ -1,10 +1,13 @@
 //! Spring physics to enable natural and interactive animations.
+pub mod motion;
+
+pub use motion::Motion;
 use std::{
     fmt::Debug,
     time::{Duration, Instant},
 };
 
-use crate::{spring_event::SpringEvent, Animate, SpringMotion};
+use crate::{event::Event, Animate};
 
 /// The minimum percent at which a spring is considered near its target.
 ///
@@ -28,7 +31,6 @@ pub const MAX_DURATION: Duration = Duration::from_millis(33);
 /// As this is designed for GUI animations and not general-purpose physics simulations,
 /// it includes some features targeted toward avoiding UI issues like overshooting.
 /// See [`MAX_DURATION`] and [`ESPILON`] for examples of this.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spring<T> {
     /// The current value of the spring.
@@ -36,17 +38,14 @@ pub struct Spring<T> {
     /// The target value that the spring will animate towards.
     target: T,
     /// The type of motion that the spring will follow, which controls damping/stiffness.
-    motion: SpringMotion,
+    motion: Motion,
     /// The last instant at which this spring's value was updated.
-    #[cfg_attr(feature = "serde", serde(skip, default = "Instant::now"))]
     last_update: Instant,
     /// The current velocity components that make up this spring animation.
-    #[cfg_attr(feature = "serde", serde(skip, default))]
     velocity: Vec<f32>,
     /// The initial distance from the target when the animation was started or interrupted.
     /// This is used to help determine when the spring is near its target and is precomputed
     /// to avoid recalculating it every frame.
-    #[cfg_attr(feature = "serde", serde(skip, default))]
     initial_distance: Vec<f32>,
 }
 
@@ -68,8 +67,8 @@ impl<T> Spring<T> {
         &self.target
     }
 
-    /// Returns the spring's current [`SpringMotion`].
-    pub fn motion(&self) -> SpringMotion {
+    /// Returns the spring's current [`Motion`].
+    pub fn motion(&self) -> Motion {
         self.motion
     }
 
@@ -79,12 +78,12 @@ impl<T> Spring<T> {
     }
 
     /// Updates the spring's `motion` to the given value.
-    pub fn set_motion(&mut self, motion: SpringMotion) {
+    pub fn set_motion(&mut self, motion: Motion) {
         self.motion = motion;
     }
 
     /// Returns an updated spring with the given `motion`.
-    pub fn with_motion(mut self, motion: SpringMotion) -> Self {
+    pub fn with_motion(mut self, motion: Motion) -> Self {
         self.motion = motion;
         self
     }
@@ -98,7 +97,7 @@ where
     ///
     /// Use the builder methods to customize the spring's behavior and target.
     pub fn new(value: T) -> Self {
-        let motion = SpringMotion::default();
+        let motion = Motion::default();
         Self {
             value: value.clone(),
             target: value,
@@ -109,9 +108,9 @@ where
         }
     }
 
-    /// Returns an updated spring with the given `target`.
-    pub fn with_target(mut self, target: T) -> Self {
-        self.interrupt(target);
+    /// Sets the `target` value of the spring and returns the updated spring.
+    pub fn to(mut self, target: T) -> Self {
+        self.set_target(target);
         self
     }
 
@@ -123,26 +122,26 @@ where
 
     /// Updates the spring based on the given `event`.
     ///
-    /// You can update either the current value by passing [`SpringEvent::Tick`]
-    /// or change the target value by passing [`SpringEvent::Target`].
+    /// You can update either the current value by passing [`Event::Tick`]
+    /// or change the target value by passing [`Event::Target`].
     ///
     /// ```rust
-    /// # use iced_anim::{Spring, SpringEvent};
+    /// # use iced_anim::{Spring, Event};
     /// let mut spring = Spring::new(0.0);
-    /// spring.update(SpringEvent::Target(5.0));
+    /// spring.update(Event::Target(5.0));
     /// assert_eq!(spring.target(), &5.0);
     ///
-    /// spring.update(SpringEvent::Tick(std::time::Instant::now()));
+    /// spring.update(Event::Tick(std::time::Instant::now()));
     /// assert!(*spring.value() > 0.0);
     ///
-    /// spring.update(SpringEvent::Settle);
+    /// spring.update(Event::Settle);
     /// assert_eq!(spring.value(), spring.target());
     /// ```
-    pub fn update(&mut self, event: SpringEvent<T>) {
+    pub fn update(&mut self, event: Event<T>) {
         match event {
-            SpringEvent::Tick(now) => self.tick(now),
-            SpringEvent::Target(target) => self.interrupt(target),
-            SpringEvent::Settle => self.settle(),
+            Event::Tick(now) => self.tick(now),
+            Event::Target(target) => self.set_target(target),
+            Event::Settle => self.settle(),
         }
     }
 
@@ -189,7 +188,12 @@ where
     }
 
     /// Interrupts the existing animation and starts a new one with the `new_target`.
-    pub fn interrupt(&mut self, new_target: T) {
+    pub fn set_target(&mut self, new_target: T) {
+        // Don't do anything if the target hasn't changed.
+        if self.target == new_target {
+            return;
+        }
+
         // Reset the last update if the spring doesn't have any energy.
         // This avoids resetting the last update during continuously interrupted animations.
         if !self.has_energy() {
@@ -203,14 +207,16 @@ where
     /// Causes the spring to settle immediately at the target value,
     /// ending any ongoing animation and setting the velocity to zero.
     pub fn settle(&mut self) {
+        // Setting the `value` to the `target` ensures that the value is exactly the target value,
+        // even if the curve doesn't reach it or the animation implementation isn't correct.
         self.value = self.target.clone();
         self.velocity = vec![0.0; T::components()];
     }
 
-    /// Makes the spring value and target immediately settle at the given `value`.
-    pub fn settle_at(&mut self, value: T) {
-        self.value = value.clone();
-        self.target = value;
+    /// Makes the spring value and target immediately settle at the given `target`.
+    pub fn settle_at(&mut self, target: T) {
+        self.value = target.clone();
+        self.target = target;
         self.velocity = vec![0.0; T::components()];
     }
 
@@ -268,7 +274,7 @@ mod tests {
     /// Springs should have energy when the current value is not equal to the target.
     #[test]
     fn has_energy_when_target_is_not_current() {
-        let spring = Spring::new(0.0).with_target(5.0);
+        let spring = Spring::new(0.0).to(5.0);
         assert!(spring.has_energy());
     }
 
@@ -283,7 +289,7 @@ mod tests {
     /// and bring all velocity components to zero.
     #[test]
     fn settle_at() {
-        let mut spring = Spring::new(0.0).with_target(3.0);
+        let mut spring = Spring::new(0.0).to(3.0);
         spring.settle_at(5.0);
         assert_eq!(spring.value(), &5.0);
         assert_eq!(spring.target(), &5.0);
@@ -292,7 +298,7 @@ mod tests {
 
     #[test]
     fn tick_changes_value_and_last_update_time() {
-        let mut spring = Spring::new(0.0).with_target(1.0);
+        let mut spring = Spring::new(0.0).to(1.0);
         let now = Instant::now();
         spring.tick(now);
 
@@ -303,12 +309,12 @@ mod tests {
     }
 
     #[test]
-    fn interrupt_changes_target_and_resets_last_update_time() {
-        let mut spring = Spring::new(0.0).with_target(1.0);
+    fn set_target_changes_target_and_resets_last_update_time() {
+        let mut spring = Spring::new(0.0).to(1.0);
 
         let now = Instant::now();
         spring.tick(now);
-        spring.interrupt(5.0);
+        spring.set_target(5.0);
 
         // The target should change as well as adjust the last update time.
         assert_eq!(spring.target, 5.0);
@@ -316,10 +322,10 @@ mod tests {
 
     /// An spring at rest should have its last update reset when interrupted.
     #[test]
-    fn interrupt_resets_last_update_when_at_rest() {
+    fn set_target_resets_last_update_when_at_rest() {
         let start_time = Instant::now();
         let mut spring = Spring::new(0.0);
-        spring.interrupt(5.0);
+        spring.set_target(5.0);
 
         // The last update time should be reset if the spring has no energy.
         assert!(spring.last_update > start_time);
@@ -330,11 +336,11 @@ mod tests {
     /// which can cause the Diff -> Event loop to have 0ms duration between updates when the real
     /// duration between renders is much longer.
     #[test]
-    fn interrupt_does_not_reset_last_update_with_energy() {
-        let mut spring = Spring::new(0.0).with_target(10.0).with_velocity(vec![1.0]);
+    fn set_target_does_not_reset_last_update_with_energy() {
+        let mut spring = Spring::new(0.0).to(10.0).with_velocity(vec![1.0]);
         let update_time = Instant::now();
-        spring.update(SpringEvent::Tick(update_time));
-        spring.interrupt(5.0);
+        spring.update(Event::Tick(update_time));
+        spring.set_target(5.0);
 
         // The last update time should not be reset if the spring has energy.
         assert_eq!(spring.last_update, update_time);
@@ -343,7 +349,7 @@ mod tests {
     /// Calling `.settle()` should jump the spring's value to the target value.
     #[test]
     fn settle_sets_value_to_target() {
-        let mut spring = Spring::new(0.0).with_target(5.0);
+        let mut spring = Spring::new(0.0).to(5.0);
         spring.settle();
         assert_eq!(spring.value(), spring.target());
     }
@@ -351,7 +357,7 @@ mod tests {
     /// Calling `.settle()` should bring all velocity components to zero.
     #[test]
     fn settle_resets_velocity() {
-        let mut spring = Spring::new(0.0).with_target(5.0).with_velocity(vec![1.0]);
+        let mut spring = Spring::new(0.0).to(5.0).with_velocity(vec![1.0]);
         spring.settle();
         assert_eq!(spring.velocity, vec![0.0]);
     }
@@ -366,24 +372,22 @@ mod tests {
     /// A response of zero should imply the spring is near its target.
     #[test]
     fn is_near_end_with_zero_duration() {
-        let spring = Spring::new(0.0)
-            .with_target(1.0)
-            .with_motion(SpringMotion::Custom {
-                response: Duration::ZERO,
-                damping: 0.5,
-            });
+        let spring = Spring::new(0.0).to(1.0).with_motion(Motion {
+            damping: 0.5,
+            response: Duration::ZERO,
+        });
         assert!(spring.is_near_end());
     }
 
     /// A spring with a response of zero should settle immediately.
     #[test]
     fn update_zero_response() {
-        let mut spring = Spring::new(0.0).with_target(1.0);
-        spring.set_motion(SpringMotion::Custom {
+        let mut spring = Spring::new(0.0).to(1.0);
+        spring.set_motion(Motion {
             response: Duration::ZERO,
             damping: 0.5,
         });
-        spring.update(SpringEvent::Tick(Instant::now()));
+        spring.update(Event::Tick(Instant::now()));
         assert_eq!(spring.value(), spring.target());
     }
 }

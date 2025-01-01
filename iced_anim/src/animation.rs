@@ -10,16 +10,16 @@
 //! # Example
 //! ```rust
 //! use iced::widget::{button, text, Row};
-//! use iced_anim::{Animation, Spring, SpringEvent};
+//! use iced_anim::{Animation, Animated, Event};
 //!
 //! #[derive(Default)]
 //! struct State {
-//!     size: Spring<f32>,
+//!     size: Animated<f32>,
 //! }
 //!
 //! #[derive(Clone)]
 //! enum Message {
-//!     UpdateSize(SpringEvent<f32>),
+//!     UpdateSize(Event<f32>),
 //! }
 //!
 //! impl State {
@@ -33,7 +33,7 @@
 //!         Row::new()
 //!             .push(
 //!                 button(text("Change target"))
-//!                     .on_press(Message::UpdateSize((self.size.value() + 50.0).into()))
+//!                     .on_press(Message::UpdateSize((self.size.target() + 50.0).into()))
 //!             )
 //!             .push(
 //!                 Animation::new(&self.size, text(self.size.value().to_string()))
@@ -50,19 +50,19 @@ use iced::{
     Element,
 };
 
-use crate::{Animate, Spring, SpringEvent};
+use crate::{Animate, Animated, Event};
 
 /// A widget that helps you animate a value over time from your state.
 /// This is useful for animating changes to a widget's appearance or layout
 /// where you want to directly change the value stored in your state versus
 /// passively animating a value like the `AnimationBuilder`.
 pub struct Animation<'a, T: Animate, Message, Theme, Renderer> {
-    /// The spring that controls the animated value.
-    spring: &'a Spring<T>,
+    /// The animated value that will be updated over time.
+    animated_value: &'a Animated<T>,
     /// The content that will respond to the animation.
     content: Element<'a, Message, Theme, Renderer>,
     /// The function that will be called when the spring needs to be updated.
-    on_update: Option<Box<dyn Fn(SpringEvent<T>) -> Message>>,
+    on_update: Option<Box<dyn Fn(Event<T>) -> Message>>,
     /// Whether animations are disabled, in which case the value will be updated
     /// immediately without animating. Useful for reduced motion preferences.
     is_disabled: bool,
@@ -71,15 +71,15 @@ pub struct Animation<'a, T: Animate, Message, Theme, Renderer> {
 impl<'a, T, Message, Theme, Renderer> Animation<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
-    Message: 'a + Clone,
+    Message: 'a,
 {
-    /// Creates a new `Animation` with the given `spring` and `content`.
+    /// Creates a new `Animation` with the given `animated_value` and `content`.
     pub fn new(
-        spring: &'a Spring<T>,
+        animated_value: &'a Animated<T>,
         content: impl Into<Element<'a, Message, Theme, Renderer>>,
     ) -> Self {
         Self {
-            spring,
+            animated_value,
             content: content.into(),
             on_update: None,
             is_disabled: false,
@@ -89,7 +89,7 @@ where
     /// Sets the function that will be called when the spring needs to be updated.
     pub fn on_update<F>(mut self, build_message: F) -> Self
     where
-        F: Fn(SpringEvent<T>) -> Message + 'static,
+        F: Fn(Event<T>) -> Message + 'static,
     {
         self.on_update = Some(Box::new(build_message));
         self
@@ -107,7 +107,7 @@ impl<'a, T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
     for Animation<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
-    Message: 'a + Clone,
+    Message: 'a,
     Renderer: 'a + iced::advanced::Renderer,
 {
     fn size(&self) -> iced::Size<iced::Length> {
@@ -225,16 +225,16 @@ where
             viewport,
         );
 
-        if !self.spring.has_energy() {
+        if !self.animated_value.is_animating() {
             return status;
         }
 
         if let Some(on_update) = &self.on_update {
-            let event: SpringEvent<T> = if self.is_disabled {
-                SpringEvent::Settle
+            let event: Event<T> = if self.is_disabled {
+                Event::Settle
             } else {
                 let now = Instant::now();
-                SpringEvent::Tick(now)
+                Event::Tick(now)
             };
             shell.publish(on_update(event));
         }
@@ -247,11 +247,23 @@ impl<'a, T, Message, Theme, Renderer> From<Animation<'a, T, Message, Theme, Rend
     for Element<'a, Message, Theme, Renderer>
 where
     T: 'static + Animate,
-    Message: 'a + Clone,
+    Message: 'a,
     Theme: 'a,
     Renderer: iced::advanced::Renderer + 'a,
 {
     fn from(animation: Animation<'a, T, Message, Theme, Renderer>) -> Self {
         Self::new(animation)
     }
+}
+
+/// A helper function to create an [`Animation`] with a given value.
+pub fn animation<'a, T, Message, Theme, Renderer>(
+    value: &'a Animated<T>,
+    content: impl Into<Element<'a, Message, Theme, Renderer>>,
+) -> Animation<'a, T, Message, Theme, Renderer>
+where
+    T: 'static + Animate,
+    Message: 'a,
+{
+    Animation::new(value, content)
 }

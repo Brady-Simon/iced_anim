@@ -2,7 +2,7 @@ use iced::{
     widget::{button, column, container, row, text},
     Border, Element, Length,
 };
-use iced_anim::animation_builder::AnimationBuilder;
+use iced_anim::{animation_builder::AnimationBuilder, transition::Easing};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -51,7 +51,8 @@ impl State {
                 .center(size)
                 .into()
         })
-        .animates_layout(true);
+        .animates_layout(true)
+        .animation(Easing::EASE);
 
         let label = text("Animated size");
 

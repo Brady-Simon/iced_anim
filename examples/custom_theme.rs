@@ -1,21 +1,19 @@
-//! An example animating a custom theme palette with serde support.
+//! An example animating a custom theme palette.
 use iced::{
     daemon::DefaultStyle,
     widget::{button, text},
     Border, Color, Element,
 };
-use iced_anim::{Animate, Animation, Spring, SpringEvent};
-use serde::{Deserialize, Serialize};
+use iced_anim::{Animate, Animated, Animation, Event};
 
 /// A custom theme used by your application that supports a `Custom` theme
 /// to power animations between different variants.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 enum Theme {
     #[default]
     Light,
     Dark,
     /// A custom theme with a custom color palette, useful for animations.
-    #[serde(skip)]
     Custom(Palette),
 }
 
@@ -45,6 +43,14 @@ impl Animate for Theme {
         palette.update(components);
         *self = Theme::Custom(palette);
     }
+
+    fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
+        let start = start.palette();
+        let end = end.palette();
+        let mut palette = start;
+        palette.lerp(&start, &end, progress);
+        *self = Theme::Custom(palette);
+    }
 }
 
 // A default daemon style for the custom theme.
@@ -61,9 +67,7 @@ impl DefaultStyle for Theme {
 // Implement custom catalogs for some widgets to use the custom theme.
 impl button::Catalog for Theme {
     type Class<'a> = ();
-    fn default<'a>() -> Self::Class<'a> {
-        ()
-    }
+    fn default<'a>() -> Self::Class<'a> {}
 
     fn style(&self, _class: &Self::Class<'_>, _status: button::Status) -> button::Style {
         let palette = self.palette();
@@ -78,9 +82,7 @@ impl button::Catalog for Theme {
 
 impl text::Catalog for Theme {
     type Class<'a> = ();
-    fn default<'a>() -> Self::Class<'a> {
-        ()
-    }
+    fn default<'a>() -> Self::Class<'a> {}
 
     fn style(&self, _class: &Self::Class<'_>) -> text::Style {
         text::Style {
@@ -116,13 +118,13 @@ const DARK_PALETTE: Palette = Palette {
 #[derive(Debug, Clone)]
 enum Message {
     /// Indicates that the theme should change or is changing.
-    ChangeTheme(SpringEvent<Theme>),
+    ChangeTheme(Event<Theme>),
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone)]
 struct State {
     /// The current app theme, which may be an animated value.
-    theme: Spring<Theme>,
+    theme: Animated<Theme>,
 }
 
 impl State {

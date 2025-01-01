@@ -1,15 +1,17 @@
-//! Helps manage animating styles for widgets.
+//! Helps manage animating values for widgets, such as animating a button's style. This can be used
+//! to manage animations within a widget for anything, but is particularly useful for animating
+//! style changes based on widget status.
 //!
-//! The [`AnimatedState`] internally keeps track of a widget's status and style, and then
-//! updates the animated style based on these values. This struct can be built into a widget's
+//! The [`AnimatedState`] can internally keep track of a widget's status and style, and then allow
+//! updates to the animated style based on these values. This struct can be built into a widget's
 //! internal state and used to manage style animations. It uses interior mutability to lazily
 //! update the animated style when the widget is drawn, and requests redraws when the widget status
 //! changes in response to some event.
 //!
-//! This requires that that your `Style` implement [`Animate`] - you can normally derive this for
-//! simple structs.
+//! This requires that that your animated `Value` implement [`Animate`] - you can normally derive
+//! this for simple structs.
 //!
-//! There are a few steps to using this struct:
+//! There are a few steps to using this struct if you want to animate a widget's style:
 //!
 //! 1. Implement `get_initial_status` and `get_status` functions for your widget. You'll use these
 //!    to give the initial and current status to the [`AnimatedState`] so it can properly update
@@ -33,15 +35,15 @@
 //!    For the current status, you can include any other fields that may be useful for determining
 //!    the current status. For a button, this would be something like the internal widget state
 //!    for tracking whether the button is pressed, and the cursor + layout for hover states.
-//! 2. Add a [`SpringMotion`] field to your widget so users can change how the animation behaves.
+//! 2. Add an [`Mode`] to the widget so users can change how the animation behaves.
 //!    Then, add a builder function for updating it, e.g.
 //!    ```no_run
-//!    # use iced_anim::SpringMotion;
-//!    # struct Button { motion: SpringMotion }
+//!    # use iced_anim::animated::Mode;
+//!    # struct Button { mode: Mode }
 //!    # impl Button {
-//!    /// Sets the motion that will be used by animations.
-//!    pub fn motion(mut self, motion: SpringMotion) -> Self {
-//!        self.motion = motion;
+//!    /// Sets the animation mode for this widget.
+//!    pub fn animation(mut self, mode: impl Into<Mode>) -> Self {
+//!        self.mode = mode.into();
 //!        self
 //!    }
 //!    # }
@@ -49,7 +51,7 @@
 //! 3. Add an `AnimatedState<Status, Style>` field to your widget's state. For example,
 //!    a button state might look like this:
 //!    ```no_run
-//!    # use iced_anim::widget::AnimatedState;
+//!    # use iced_anim::AnimatedState;
 //!    # type Status = iced::widget::button::Status;
 //!    # type Style = iced::widget::button::Style;
 //!    #[derive(Debug)]
@@ -59,15 +61,15 @@
 //!    }
 //!    ```
 //! 4. Update [`iced::advanced::Widget::state`] to get the initial status, then pass that status
-//!    and motion into [`AnimatedState::new`] to create the animated state.
-//! 5. Update [`iced::advanced::Widget::diff`] to call call [`AnimatedState::diff`] if the motion
+//!    and animation mode into [`AnimatedState::new`] to create the animated state.
+//! 5. Update [`iced::advanced::Widget::diff`] to call call [`AnimatedState::diff`] if the mode
 //!    has changed externally.
 //!    ```ignore
 //!    fn diff(&self, tree: &mut Tree) {
-//!        // Diff the animated state with a potentially new motion.
+//!        // Diff the animated state with a potentially new animation mode.
 //!        let state = tree.state.downcast_mut::<State>();
-//!        state.animated_state.diff(self.motion);
-//!        // Diff the rest of your widget state as necessary.
+//!        state.animated_state.diff(self.animation);
+//!        // Diff the rest of your widget state as necessary, e.g.
 //!        tree.diff_children(std::slice::from_ref(&self.content));
 //!    }
 //!    ```
@@ -92,125 +94,127 @@
 //!    }
 //!    ```
 //! 8. Finally, ensure your widget handles [`iced::window::Event::RedrawRequested`] events by
-//!    calling [`AnimatedState::tick`] to update the animated style with the current time. This
-//!    is how the animated state can update the style over time.
+//!    calling [`AnimatedState::tick`] to update the animated value with the current time. This
+//!    is how the animated state can update the value over time.
 use std::{
     cell::{Ref, RefCell},
     time::Instant,
 };
 
-use crate::{Animate, Spring, SpringMotion};
+use crate::{animated::Mode, Animate, Animated};
 
-/// Helps manage animating styles for widgets.
+/// Helps manage animating values for widgets.
 ///
-/// This maintains the current animated style for a widget, which depends on the `status`.
+/// This maintains the current animated value for a widget, which depends on the `status`.
+/// - `Status`: The status of the widget which affects some `Value`, e.g. `button::Status`.
+/// - `Value`: The value that will be animated, e.g. `button::Style`.
 #[derive(Debug, Clone, PartialEq)]
-pub struct AnimatedState<Status, Style> {
+pub struct AnimatedState<Status, Value> {
     /// The current status of the widget, which may affect the styling.
     status: Status,
-    /// The animated style used by the widget, and is updated when the style changes.
-    /// This is in a `RefCell` so that the style can be updated in the `draw` function,
+    /// The animated value used by the widget, and is updated when the value changes.
+    /// This is in a `RefCell` so that the value can be updated in the `draw` function,
     /// where we have access to the current theme. The cell may contain `None` until the
-    /// first render, when the style is created.
-    animated_style: RefCell<Option<Spring<Style>>>,
-    /// The motion used by the animated style.
-    motion: SpringMotion,
+    /// first render, when the value is created.
+    animated_value: RefCell<Option<Animated<Value>>>,
+    /// The animation mode to use for the animated value.
+    mode: Mode,
 }
 
-impl<Status, Style> AnimatedState<Status, Style>
+impl<Status, Value> AnimatedState<Status, Value>
 where
     Status: PartialEq,
-    Style: Animate + Clone + PartialEq,
+    Value: Animate,
 {
-    pub fn new(status: Status, motion: SpringMotion) -> Self {
+    /// Creates a new [`AnimatedState`] with the given `status` and animation `mode`.
+    pub fn new(status: Status, mode: impl Into<Mode>) -> Self {
         Self {
             status,
-            animated_style: RefCell::new(None),
-            motion,
+            animated_value: RefCell::new(None),
+            mode: mode.into(),
         }
     }
 
+    /// Returns the current status of the widget.
     pub fn status(&self) -> &Status {
         &self.status
     }
 
-    /// Updates this animated state based on a potentially new `style` received by the widget.
-    pub fn diff(&mut self, motion: SpringMotion) {
-        if self.motion != motion {
-            self.motion = motion;
-            let mut animated_style = self.animated_style.borrow_mut();
-            if let Some(style) = animated_style.as_mut() {
-                style.set_motion(motion);
+    /// Updates this animated state based on a potentially new `value` received by the widget.
+    pub fn diff(&mut self, mode: impl Into<Mode>) {
+        let mode = mode.into();
+        if self.mode != mode {
+            self.mode = mode;
+            let mut animated_value = self.animated_value.borrow_mut();
+            if let Some(animation) = animated_value.as_mut() {
+                animation.apply(mode);
             }
         }
     }
 
     /// Determines whether the widget needs to be redrawn based on events, updating the status and
-    /// animated style as necessary. Generally called in a widget's `on_event` function.
+    /// animated value as necessary. Generally called in a widget's `on_event` function.
     pub fn needs_redraw(&mut self, status: Status) -> bool {
-        let animated_style = self.animated_style.borrow();
+        let animated_value = self.animated_value.borrow();
         if self.status != status {
             self.status = status;
             true
-        } else if let Some(animated_style) = animated_style.as_ref() {
-            animated_style.has_energy()
+        } else if let Some(animated_value) = animated_value.as_ref() {
+            animated_value.is_animating()
         } else {
-            // No animated style yet.
+            // No animated value yet.
             false
         }
     }
 
-    /// Update the animated style with the current time.
+    /// Update the animated value with the current time.
     /// Call this for `RedrawRequested` events.
     pub fn tick(&mut self, now: Instant) {
-        let mut animated_style = self.animated_style.borrow_mut();
-        if let Some(animated_style) = animated_style.as_mut() {
-            animated_style.tick(now);
+        let mut animated_value = self.animated_value.borrow_mut();
+        if let Some(animated_value) = animated_value.as_mut() {
+            animated_value.tick(now);
         }
     }
 
     /// Causes the animation to immediately jump to the target value.
     pub fn settle(&mut self) {
-        let mut animated_style = self.animated_style.borrow_mut();
-        if let Some(animated_style) = animated_style.as_mut() {
-            animated_style.settle();
+        let mut animated_value = self.animated_value.borrow_mut();
+        if let Some(animated_value) = animated_value.as_mut() {
+            animated_value.settle();
         }
     }
 
     /// Causes the animation to immediately jump to the given `value`.
-    pub fn settle_at(&mut self, value: Style) {
-        let mut animated_style = self.animated_style.borrow_mut();
-        if let Some(animated_style) = animated_style.as_mut() {
-            animated_style.settle_at(value);
+    pub fn settle_at(&mut self, value: Value) {
+        let mut animated_value = self.animated_value.borrow_mut();
+        if let Some(animated_value) = animated_value.as_mut() {
+            animated_value.settle_at(value);
         }
     }
 
-    /// Gets a reference to the animated style to use in a widget's `draw` function,
-    /// using interior mutability to update the animation as necessary.
+    /// Gets a reference to the animated value, typically to use in a widget's `draw` function.
     ///
-    /// The animation target will change if the `new_style` function returns a different style
+    /// The animation target will change if the `new_value` function returns a different value
     /// than the current target.
-    pub fn current_style(&self, new_style: impl Fn(&Status) -> Style) -> Ref<'_, Style> {
+    pub fn current_value(&self, new_value: impl Fn(&Status) -> Value) -> Ref<'_, Value> {
         // Update the latest style if it has changed and indicate a redraw is needed.
-        let new_style = new_style(&self.status);
+        let new_value = new_value(&self.status);
 
         // Scoping the mutable borrow of the animated style.
         {
-            let mut animated_style_ref = self.animated_style.borrow_mut();
-            if let Some(animated_style) = animated_style_ref.as_mut() {
-                if animated_style.target() != &new_style {
-                    animated_style.interrupt(new_style);
+            let mut animated_value_ref = self.animated_value.borrow_mut();
+            if let Some(animated_value) = animated_value_ref.as_mut() {
+                if animated_value.target() != &new_value {
+                    animated_value.set_target(new_value);
                 }
             } else {
                 // Create a new animated style if one doesn't exist.
-                let animated_style = Spring::new(new_style.clone())
-                    .with_motion(self.motion)
-                    .with_target(new_style);
-                animated_style_ref.replace(animated_style);
+                let animated_value = Animated::new(new_value.clone(), self.mode);
+                animated_value_ref.replace(animated_value);
             }
         }
 
-        Ref::map(self.animated_style.borrow(), |style| {
+        Ref::map(self.animated_value.borrow(), |style| {
             style
                 .as_ref()
                 .expect("Animated style should have been lazily created")

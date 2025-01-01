@@ -1,5 +1,3 @@
-use std::{f32::consts::PI, sync::LazyLock, time::Duration};
-
 use iced::{
     gradient::{ColorStop, Linear},
     widget::{checkbox, column, container, row, text},
@@ -8,11 +6,12 @@ use iced::{
     Length::Fill,
     Theme,
 };
-
 use iced_anim::{
+    spring::Motion,
+    transition::Easing,
     widget::button::{button, danger, primary, Status},
-    SpringMotion,
 };
+use std::{f32::consts::PI, sync::LazyLock, time::Duration};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -42,25 +41,29 @@ impl State {
             column![
                 button(text("+"))
                     .on_press_maybe(is_enabled.then_some(Message::Adjust(1)))
+                    .animation(Easing::EASE)
                     .style(primary),
                 row![
                     button(text("-10"))
                         .on_press_maybe(is_enabled.then_some(Message::Adjust(-10)))
+                        .animation(Motion::default())
                         .style(danger_gradient),
                     text(self.counter.to_string()).size(24).width(60.0).center(),
                     button(text("+10"))
                         .on_press_maybe(is_enabled.then_some(Message::Adjust(10)))
+                        .animation(Motion::default())
                         .style(success_gradient),
                 ]
                 .spacing(8),
                 button(text("-"))
                     .on_press_maybe(is_enabled.then_some(Message::Adjust(-1)))
+                    .animation(Easing::EASE)
                     .style(danger),
                 button(text("Reset").size(20))
                     .on_press_maybe(is_enabled.then_some(Message::Adjust(-self.counter)))
-                    .motion(SpringMotion::Custom {
+                    .animation(Motion {
                         response: Duration::from_millis(1000),
-                        damping: SpringMotion::Smooth.damping(),
+                        damping: Motion::SMOOTH.damping(),
                     })
                     .style(rainbow_style),
                 checkbox("Disable Buttons", self.is_disabled).on_toggle(Message::DisableButtons)
