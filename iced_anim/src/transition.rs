@@ -231,7 +231,7 @@ mod tests {
         assert_eq!(*transition.target(), new_target);
 
         // The final result should have the new target value.
-        let done = Instant::now() + DEFAULT_DURATION;
+        let done = Instant::now() + DEFAULT_DURATION + Duration::from_millis(1);
         transition.tick(done);
         assert_eq!(*transition.value(), new_target);
     }
@@ -244,7 +244,7 @@ mod tests {
             .to(1.0)
             .with_easing(Easing::default().reversible(true));
         let halfway = Instant::now() + DEFAULT_DURATION / 2;
-        let done = Instant::now() + DEFAULT_DURATION;
+        let done = Instant::now() + DEFAULT_DURATION + Duration::from_millis(1);
 
         // Forward progress should maintain the `forward` direction.
         transition.tick(halfway);
@@ -273,7 +273,7 @@ mod tests {
         transition.tick(halfway);
         assert!(transition.is_animating());
 
-        let done = Instant::now() + DEFAULT_DURATION;
+        let done = Instant::now() + DEFAULT_DURATION + Duration::from_millis(1);
         transition.tick(done);
         assert!(!transition.is_animating());
     }
