@@ -136,12 +136,16 @@ where
     ///
     /// spring.update(Event::Settle);
     /// assert_eq!(spring.value(), spring.target());
+    ///
+    /// spring.update(Event::SettleAt(10.0));
+    /// assert_eq!(spring.value(), &10.0);
     /// ```
     pub fn update(&mut self, event: Event<T>) {
         match event {
             Event::Tick(now) => self.tick(now),
             Event::Target(target) => self.set_target(target),
             Event::Settle => self.settle(),
+            Event::SettleAt(target) => self.settle_at(target),
         }
     }
 

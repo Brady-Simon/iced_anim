@@ -119,6 +119,7 @@ where
             Event::Settle => self.settle(),
             Event::Tick(now) => self.tick(now),
             Event::Target(target) => self.set_target(target),
+            Event::SettleAt(target) => self.settle_at(target),
         }
     }
 

@@ -46,6 +46,9 @@ pub enum Event<T> {
     /// Causes the spring to settle to its target value immediately. This is
     /// useful when the user has indicated they want reduced motion.
     Settle,
+    /// Causes the spring to settle to a specific target value immediately.
+    /// This is useful if you want to jump to a specific value without animating.
+    SettleAt(T),
 }
 
 // Impl `Copy` for `Event` when `T` is `Copy`.

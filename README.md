@@ -273,6 +273,7 @@ e.g. `cargo run --example animated_color`.
 - Introduced the `Animated` API, which encompasses both springs and transitions
 - `Animation` widget now takes an `Animated` value instead of a `Spring`
 - Renamed `SpringMotion` to `Motion` under the `iced_anim::spring` module
+- Renamed `SpringEvent` to `Event` and added a new `SettleAt(T)` case
 - Moved `AnimatedState` to the top-level module instead of the `widget` module
 - Replaced `.motion()` functions with `.animation()` functions that take a new 
   `iced_anim::animated::Mode` that allows configuring springs or transitions
