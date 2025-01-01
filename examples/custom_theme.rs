@@ -47,7 +47,7 @@ impl Animate for Theme {
     fn lerp(&mut self, start: &Self, end: &Self, progress: f32) {
         let start = start.palette();
         let end = end.palette();
-        let mut palette = start.clone();
+        let mut palette = start;
         palette.lerp(&start, &end, progress);
         *self = Theme::Custom(palette);
     }
@@ -67,9 +67,7 @@ impl DefaultStyle for Theme {
 // Implement custom catalogs for some widgets to use the custom theme.
 impl button::Catalog for Theme {
     type Class<'a> = ();
-    fn default<'a>() -> Self::Class<'a> {
-        ()
-    }
+    fn default<'a>() -> Self::Class<'a> {}
 
     fn style(&self, _class: &Self::Class<'_>, _status: button::Status) -> button::Style {
         let palette = self.palette();
@@ -84,9 +82,7 @@ impl button::Catalog for Theme {
 
 impl text::Catalog for Theme {
     type Class<'a> = ();
-    fn default<'a>() -> Self::Class<'a> {
-        ()
-    }
+    fn default<'a>() -> Self::Class<'a> {}
 
     fn style(&self, _class: &Self::Class<'_>) -> text::Style {
         text::Style {

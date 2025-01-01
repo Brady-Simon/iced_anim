@@ -1,49 +1,62 @@
 use iced::{
     widget::{button, column, container, row, text},
-    Color, Element, Length,
+    Border, Element, Length,
 };
-use iced_anim::{animation::animation, transition::Easing, Animated, Event};
+use iced_anim::{animation_builder::AnimationBuilder, transition::Easing};
 
 #[derive(Debug, Clone)]
 enum Message {
-    AdjustSize(Event<f32>),
+    AdjustSize(f32),
 }
 
 struct State {
-    size: Animated<f32>,
+    size: f32,
 }
 
 impl Default for State {
     fn default() -> Self {
-        Self {
-            size: Animated::transition(50.0, Easing::EASE),
-        }
+        Self { size: 50.0 }
     }
 }
 
 impl State {
     fn update(&mut self, message: Message) {
         match message {
-            Message::AdjustSize(event) => self.size.update(event),
+            Message::AdjustSize(dx) => {
+                self.size = (self.size + dx).max(0.0);
+            }
         }
     }
 
     fn view(&self) -> Element<Message> {
         let buttons = row![
-            button(text("-50")).on_press(Message::AdjustSize((self.size.target() - 50.0).into())),
-            button(text("+50")).on_press(Message::AdjustSize((self.size.target() + 50.0).into())),
+            button(text("-150")).on_press(Message::AdjustSize(-150.0)),
+            button(text("-50")).on_press(Message::AdjustSize(-50.0)),
+            button(text("+50")).on_press(Message::AdjustSize(50.0)),
+            button(text("+150")).on_press(Message::AdjustSize(150.0)),
         ]
         .spacing(8);
 
-        let animated_box = animation(
-            &self.size,
-            container(text(*self.size.value() as isize))
-                .style(|_| container::background(Color::from_rgb(1.0, 0.0, 0.0)))
-                .center(*self.size.value()),
-        )
-        .on_update(Message::AdjustSize);
+        let animated_box = AnimationBuilder::new(self.size, |size| {
+            container(text(size as isize))
+                .style(move |theme: &iced::Theme| iced::widget::container::Style {
+                    border: Border {
+                        color: theme.extended_palette().secondary.strong.color,
+                        width: 1.0,
+                        radius: 6.0.into(),
+                    },
+                    background: Some(theme.extended_palette().secondary.weak.color.into()),
+                    ..Default::default()
+                })
+                .center(size)
+                .into()
+        })
+        .animates_layout(true)
+        .animation(Easing::EASE);
 
-        column![buttons, animated_box]
+        let label = text("Animated size");
+
+        column![buttons, animated_box, label]
             .spacing(8)
             .padding(8)
             .width(Length::Shrink)

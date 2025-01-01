@@ -25,16 +25,16 @@ const MAX_NEWTON_ITERATIONS: usize = 4;
 const CUBIC_BEZIER_SPLINE_SAMPLES: usize = 11;
 
 /// An easing function that starts slow, accelerates sharply, and then slows down gradually.
-pub const EASE: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.25, 0.1, 0.25, 1.0));
+pub static EASE: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.25, 0.1, 0.25, 1.0));
 
 /// An easing function that starts slow and speeds up.
-pub const EASE_IN: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.42, 0.0, 1.0, 1.0));
+pub static EASE_IN: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.42, 0.0, 1.0, 1.0));
 
 /// An easing function that starts fast and slows down.
-pub const EASE_OUT: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.0, 0.0, 0.58, 1.0));
+pub static EASE_OUT: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.0, 0.0, 0.58, 1.0));
 
 /// An easing function that starts slow, speeds up, and then slows down.
-pub const EASE_IN_OUT: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.0, 0.42, 0.58, 1.0));
+pub static EASE_IN_OUT: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.0, 0.42, 0.58, 1.0));
 
 /// A bezier curve implementation designed to solve cubic bezier curves.
 /// The primary use-case is enabling curves like `cubic-bezier()` from CSS.
@@ -85,8 +85,8 @@ impl Bezier {
 
         let mut spline_samples = [0.0; CUBIC_BEZIER_SPLINE_SAMPLES];
         let delta_t = 1.0 / (CUBIC_BEZIER_SPLINE_SAMPLES - 1) as f32;
-        for i in 0..CUBIC_BEZIER_SPLINE_SAMPLES {
-            spline_samples[i] = Self::sample_curve_x(ax, bx, cx, i as f32 * delta_t);
+        for (i, sample) in spline_samples.iter_mut().enumerate() {
+            *sample = Self::sample_curve_x(ax, bx, cx, i as f32 * delta_t);
         }
 
         Bezier {

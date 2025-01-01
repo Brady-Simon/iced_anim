@@ -1048,7 +1048,7 @@ mod tests {
     #[test]
     fn update_background() {
         let mut background = iced::Background::Color(iced::Color::BLACK);
-        let components = vec![0.1 as f32; iced::Background::components()];
+        let components = vec![0.1_f32; iced::Background::components()];
         let mut components = components.iter().copied();
         background.update(&mut components);
         assert_ne!(background, iced::Background::Color(iced::Color::BLACK));

@@ -154,5 +154,5 @@ pub fn main() -> iced::Result {
 fn selected_color(rectangle: Rectangle) -> Color {
     let x = rectangle.x / 1024.0;
     let y = rectangle.y / 768.0;
-    Color::from_rgb(x as f32, y as f32, 1.0 - x as f32)
+    Color::from_rgb(x, y, 1.0 - x)
 }
