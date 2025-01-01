@@ -66,13 +66,6 @@ impl Easing {
         reversible: false,
     };
 
-    /// A default easing that uses [`Curve::EaseInOutCirc`] and the default duration.
-    pub const EASE_IN_OUT_CIRC: Self = Self {
-        curve: Curve::EaseInOutCirc,
-        duration: DEFAULT_DURATION,
-        reversible: false,
-    };
-
     /// Creates a new [`Easing`] with the given `curve`.
     pub fn new(curve: Curve) -> Self {
         Self {

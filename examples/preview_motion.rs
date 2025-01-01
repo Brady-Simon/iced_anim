@@ -51,7 +51,7 @@ const MOTIONS: [PreviewMotion; 3] = [
     },
 ];
 
-const EASINGS: [PreviewEasing; 6] = [
+const EASINGS: [PreviewEasing; 5] = [
     PreviewEasing {
         name: "Linear",
         easing: Easing::LINEAR,
@@ -71,10 +71,6 @@ const EASINGS: [PreviewEasing; 6] = [
     PreviewEasing {
         name: "Ease In Out",
         easing: Easing::EASE_IN_OUT,
-    },
-    PreviewEasing {
-        name: "Ease In Out Circular",
-        easing: Easing::EASE_IN_OUT_CIRC,
     },
 ];
 

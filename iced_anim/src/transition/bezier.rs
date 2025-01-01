@@ -34,9 +34,9 @@ pub static EASE_IN: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.42, 0.0, 1
 pub static EASE_OUT: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.0, 0.0, 0.58, 1.0));
 
 /// An easing function that starts slow, speeds up, and then slows down.
-pub static EASE_IN_OUT: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.0, 0.42, 0.58, 1.0));
+pub static EASE_IN_OUT: LazyLock<Bezier> = LazyLock::new(|| Bezier::new(0.42, 0.0, 0.58, 1.0));
 
-/// A bezier curve implementation designed to solve cubic bezier curves.
+/// A cubic bezier curve implementation designed to solve cubic bezier curves.
 /// The primary use-case is enabling curves like `cubic-bezier()` from CSS.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Bezier {
