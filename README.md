@@ -5,35 +5,141 @@ This package is designed to make it easy to animate between values using
 
 ## Overview
 
-There are two main widgets exposed: `AnimationBuilder` and `Animation`. Both
-work off the core `Animate` trait defining how a value is animated, but differ
-on where the animated state is kept. The `AnimationBuilder` stores the animated
-value within the widget itself while the `Animation` widget takes the animated
-value from props and allows you to emit a message to update the value.
+Animations are powered by the `Animate` trait. You can pick between spring or
+transition animations. Controlled animations using the `Animation` widget have
+a few parts:
 
-Both widgets animate values using spring physics instead of easing functions to
-allow for more natural and interruptible animations.
+- Storing an `Animated<T>` value in your app state
+- Including an update message, e.g. `Message::UpdateSize(iced_anim::Event<T>)`
+- Piping animation events to your animated value
+- Wrapping the UI you want to animate in an `Animation` widget
 
-### Animated widgets
-
-A subset of the standard `iced` widgets are exported under a `widgets` feature
-flag. You can use these as drop-in replacements for the existing widgets:
+Let's follow an example where you have a `size` in your app state and want to
+animate changes to it:
 
 ```rust
-use iced::widget::text;
-use iced_anim::widget::button;
+use iced_anim::{Animated, Event};
 
-let my_button = button(text("Animated button"))
-    .on_press(Message::DoSomething);
+#[derive(Default)]
+struct State {
+    // Your animated value, wrapped in an `Animated` type.
+    size: Animated<f32>,
+}
+
+#[derive(Clone)]
+enum Message {
+    // A message that lets you (and animation widgets) update the size.
+    UpdateSize(Event<f32>),
+}
+
+```rust
+impl State {
+    fn update(&mut self, message: Message) {
+        match message {
+            // Let your animated value process the event
+            Message::UpdateSize(event) => self.size.update(event),
+        }
+    }
+}
 ```
+
+Next, let's add a default impl using an ease transition that sets the initial
+size at 50px:
+
+```rust
+use iced_anim::transition::Easing;
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            size: Animated::transition(50.0, Easing::EASE),
+        }
+    }
+}
+```
+
+Or, if you're feeling spicy, you can use a spring animation:
+
+```rust
+use iced_anim::spring::Motion;
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            size: Animated::spring(50.0, Motion::BOUNCY),
+        }
+    }
+}
+```
+
+Next, you need to use your animated size in a view. You can use the `Animation`
+widget to make your UI animate when the `size` changes. You'll also want a way
+to change the size so you can see the animation, so let's add some buttons too.
+
+```rust
+use iced::{
+    widget::{button, column, container, row, text},
+    Color, Element, Length,
+};
+use iced_anim::{animation::animation, transition::Easing};
+
+impl State {
+    pub fn view(&self) -> Element<Message> {
+        let buttons = row![
+            button(text("-50")).on_press(Message::UpdateSize(Event::Target(self.size.target() - 50.0))),
+            button(text("+50")).on_press(Message::UpdateSize(Event::Target(self.size.target() + 50.0))),
+        ]
+        .spacing(8);
+
+        let animated_box = animation(
+            &self.size,
+            container(text(*self.size.value() as isize))
+                .style(|_| container::background(Color::from_rgb(1.0, 0.0, 0.0)))
+                .center(*self.size.value()),
+        )
+        .on_update(Message::UpdateSize);
+
+        column![buttons, animated_box]
+            .spacing(8)
+            .padding(8)
+            .width(Length::Shrink)
+            .into()
+    }
+}
+```
+
+Or, if you don't want to type of `Event::Target`, you can replace it with 
+`.into()` since the `From` impl for `Event` is the `Event::Target` case.
+
+```rust
+let buttons = row![
+    button(text("-50")).on_press(Message::UpdateSize((self.size.target() - 50.0).into())),
+    button(text("+50")).on_press(Message::UpdateSize((self.size.target() + 50.0).into())),
+]
+.spacing(8);
+```
+
+The `Animation` widget works by watching your animated `size` and sending
+updates through the message you pass to `.on_update` to trigger rebuilds.
+Anytime you set a new target value for your animation, the `Animation` widget
+will pick up the change and emit messages to update the animated value.
+
+In the above example, you can set a new target by emitting the message we
+created, e.g. `Message::UpdateSize(150.0.into())`. If you need to access the
+current animated value or the target value (the value being animated towards),
+you can use the `.value()` and `.target()` functions respectively.
+
+If you have a very simple value you'd like to animate but don't want to store
+in your app state, then consider the `AnimationBuilder` widget.
 
 ### `AnimationBuilder` widget
 
-The `AnimationBuilder` widget takes some sort of value that implements 
-`Animate` and a closure to build out a UI based on the current interpolated
-value. The benefit is that you don't have to emit messages for very simple 
-animations but has a couple limitations mentioned below. Typical usage might
-look something like this, where `self.size` is an `f32` in your app state:
+The `AnimationBuilder` widget lets you have uncontrolled animations that takes
+some sort of value that implements `Animate` and a closure to build out a UI
+based on the current interpolated value. The benefit is that you don't have to
+emit messages for very simple animations but has a couple limitations mentioned
+below. Typical usage might look something like this, where `self.size` is an 
+`f32` in your app state:
 
 ```rust
 AnimationBuilder::new(self.size, |size| {
@@ -50,8 +156,9 @@ invalidating the app layout, but will be necessary in certain situations.
 
 The UI will automatically re-render when `self.size` is changed. The closure
 provides the current animated value and will be called to generate the next
-view as appropriate. To see more for this particular example, refer to the
-`animated_size` example.
+view as appropriate. This means you don't need to store an `Animated` value in
+your app state or have a message dedicated to updating it. To see more for this
+particular example, refer to the `animated_size` example.
 
 #### Limitations
 
@@ -65,66 +172,26 @@ animated. One animation at a time will function correctly, but trying to adjust
 both at the same time leads to the inner property skipping to the final value.
 Use the `Animation` widget if you need any of these properties.
 
-### `Animation` widget
-
-The `Animation` widget works by taking a `Spring<T>` value and some element,
-then emitting a message when the value needs to change. Your app state and 
-message would look something like this:
-
-```rust
-use iced_anim::{Animation, Spring, Event};
-
-#[derive(Default)]
-struct State {
-    size: Spring<f32>,
-}
-
-#[derive(Clone)]
-enum Message {
-    UpdateSize(Event<f32>),
-}
-```
-
-Then, somewhere in your view, have a way to change the spring's target and
-update the animated value. You can use `.into()` as a shorthand to create a
-`Event::Target` for changing where the spring should animate towards.
-
-```rust
-use iced::widget::{Column, button, text};
-
-Column::new()
-    .push(
-        button(text("+50"))
-            .on_press(Message::UpdateSize((self.size.value() + 50.0).into()))
-    )
-    .push(
-        Animation::new(self.size, text(self.size.value().to_string()))
-            .on_update(Message::UpdateSize)
-    )
-```
-
-Finally, your update function will forward the event to `self.size.update` to 
-update the spring's inner state correctly. 
-
-```rust
-impl State {
-    fn update(&mut self, message: Message) {
-        match message {
-            Message::UpdateSize(event) => self.size.update(event),
-        }
-    }
-}
-```
-
-See the `stateful_animation` example for a complete example.
-
-### Which one should I use?
+### Should I use `Animation` or `AnimationBuilder`?
 
 Generally, if you're animating a tiny value that might not be directly within
 your state and the element won't contain any nested animated values, then use
 `AnimationBuilder`. Otherwise, use the state-driven `Animation` to avoid the
 limitations of widget-driven animations. Also, use `Animation` anytime you want
 your state to contain the animated value.
+
+### Animated widgets
+
+A subset of the standard `iced` widgets are exported under a `widgets` feature
+flag. You can use these as drop-in replacements for the existing widgets:
+
+```rust
+use iced::widget::text;
+use iced_anim::widget::button;
+
+let my_button = button(text("Animated button"))
+    .on_press(Message::DoSomething);
+```
 
 ## Types that implement `Animate`
 
@@ -156,19 +223,26 @@ AnimationBuilder::new((self.size, self.color), |(size, color)| {
 .animates_layout(true)
 ```
 
-## Controlling the spring motion
+## Controlling the animation
 
-The spring motion of an `AnimationBuilder` can be customized. There are a few
-defaults like `Motion::SMOOTH` and `Motion::BOUNCY`, but you can also create your own.
+You can customize the animation by passing in different values to the 
+`.animation` function. You can pass anything that can be converted to an
+`animated::Mode`, namely a `spring::Motion` or `transition::Easing`. There are
+defaults like `Easing::EASE_OUT` and `Motion::BOUNCY`, but you can create your
+own as well.
 
 ```rust
+use std::time::Duration;
+use iced::widget::{container, text};
+use iced_anim::{AnimationBuilder, spring::Motion};
+
 AnimationBuilder::new(self.size, |size| {
     container(text(size as isize))
         .center(size)
         .into()
 })
 .animates_layout(true)
-.motion(Motion { 
+.animation(Motion { 
     damping: 0.5,
     response: Duration::from_millis(500),
 })
