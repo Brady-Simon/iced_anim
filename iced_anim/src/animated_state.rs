@@ -141,7 +141,8 @@ where
     }
 
     /// Updates this animated state based on a potentially new `value` received by the widget.
-    pub fn diff(&mut self, mode: Mode) {
+    pub fn diff(&mut self, mode: impl Into<Mode>) {
+        let mode = mode.into();
         if self.mode != mode {
             self.mode = mode;
             let mut animated_value = self.animated_value.borrow_mut();
