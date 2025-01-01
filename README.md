@@ -276,3 +276,4 @@ e.g. `cargo run --example animated_color`.
 - Moved `AnimatedState` to the top-level module instead of the `widget` module
 - Replaced `.motion()` functions with `.animation()` functions that take a new 
   `iced_anim::animated::Mode` that allows configuring springs or transitions
+- Add `lerp` function to `Animate` trait
