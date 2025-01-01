@@ -32,7 +32,6 @@ enum Message {
     UpdateSize(Event<f32>),
 }
 
-```rust
 impl State {
     fn update(&mut self, message: Message) {
         match message {
