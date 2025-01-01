@@ -8,7 +8,7 @@ publish = false
 
 [dev-dependencies]
 iced = { workspace = true, features = ["advanced", "canvas", "debug", "tokio"] }
-iced_anim = { version = "0.1.0", path = "../iced_anim", features = ["derive", "widgets"] }
+iced_anim = { version = "0.2.0", path = "../iced_anim", features = ["derive", "widgets"] }
 
 [[example]]
 name = "animated_color"
