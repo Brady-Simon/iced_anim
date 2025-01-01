@@ -71,7 +71,7 @@ pub struct Animation<'a, T: Animate, Message, Theme, Renderer> {
 impl<'a, T, Message, Theme, Renderer> Animation<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
-    Message: 'a + Clone,
+    Message: 'a,
 {
     /// Creates a new `Animation` with the given `animated_value` and `content`.
     pub fn new(
@@ -107,7 +107,7 @@ impl<'a, T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
     for Animation<'a, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
-    Message: 'a + Clone,
+    Message: 'a,
     Renderer: 'a + iced::advanced::Renderer,
 {
     fn size(&self) -> iced::Size<iced::Length> {
@@ -247,11 +247,23 @@ impl<'a, T, Message, Theme, Renderer> From<Animation<'a, T, Message, Theme, Rend
     for Element<'a, Message, Theme, Renderer>
 where
     T: 'static + Animate,
-    Message: 'a + Clone,
+    Message: 'a,
     Theme: 'a,
     Renderer: iced::advanced::Renderer + 'a,
 {
     fn from(animation: Animation<'a, T, Message, Theme, Renderer>) -> Self {
         Self::new(animation)
     }
+}
+
+/// A helper function to create an [`Animation`] with a given value.
+pub fn animation<'a, T, Message, Theme, Renderer>(
+    value: &'a Animated<T>,
+    content: impl Into<Element<'a, Message, Theme, Renderer>>,
+) -> Animation<'a, T, Message, Theme, Renderer>
+where
+    T: 'static + Animate,
+    Message: 'a,
+{
+    Animation::new(value, content)
 }

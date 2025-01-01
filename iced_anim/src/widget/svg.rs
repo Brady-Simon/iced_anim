@@ -1,6 +1,7 @@
 //! Svg widgets display vector graphics in your application.
+use crate::animated::Mode;
+
 use super::AnimatedState;
-use crate::animated::AnimationConfig;
 use iced::advanced::{
     layout, renderer,
     widget::{tree, Tree},
@@ -33,7 +34,7 @@ where
     class: Theme::Class<'a>,
     rotation: Rotation,
     opacity: f32,
-    animation: AnimationConfig,
+    mode: Mode,
 }
 
 #[derive(Debug)]
@@ -55,7 +56,7 @@ where
             class: Theme::default(),
             rotation: Rotation::default(),
             opacity: 1.0,
-            animation: AnimationConfig::default(),
+            mode: Mode::default(),
         }
     }
 
@@ -124,8 +125,8 @@ where
     }
 
     /// Sets the animation of the [`Svg`].
-    pub fn animation(mut self, config: AnimationConfig) -> Self {
-        self.animation = config;
+    pub fn animation(mut self, mode: impl Into<Mode>) -> Self {
+        self.mode = mode.into();
         self
     }
 
@@ -159,7 +160,7 @@ where
     fn state(&self) -> tree::State {
         let status = self.get_initial_status();
         let state = State {
-            animated_state: AnimatedState::new(status, self.animation),
+            animated_state: AnimatedState::new(status, self.mode),
         };
 
         tree::State::new(state)
@@ -168,7 +169,7 @@ where
     fn diff(&self, tree: &mut Tree) {
         // If the style changes from outside, then immediately update the style.
         let state = tree.state.downcast_mut::<State>();
-        state.animated_state.diff(self.animation);
+        state.animated_state.diff(self.mode);
     }
 
     fn size(&self) -> Size<Length> {
@@ -250,7 +251,7 @@ where
         let state = tree.state.downcast_ref::<State>();
         let style = state
             .animated_state
-            .current_style(|status| theme.style(&self.class, *status));
+            .current_value(|status| theme.style(&self.class, *status));
 
         let render = |renderer: &mut Renderer| {
             renderer.draw_svg(

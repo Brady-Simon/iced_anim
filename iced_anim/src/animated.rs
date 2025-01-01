@@ -1,13 +1,11 @@
-mod animation_config;
 mod animation_type;
 mod mode;
 
 use crate::{
     spring::Motion,
-    transition::{Curve, Transition},
+    transition::{Easing, Transition},
     Animate, Event, Spring,
 };
-pub use animation_config::AnimationConfig;
 pub use animation_type::AnimationType;
 pub use mode::Mode;
 use std::time::{Duration, Instant};
@@ -27,12 +25,10 @@ where
     T: Animate,
 {
     /// Creates a new [`Animated`] value based on the given [`AnimationConfig`].
-    pub fn new(value: T, config: AnimationConfig) -> Self {
-        match config.mode() {
-            Mode::Spring(motion) => Self::spring(value, motion).with_duration(config.duration()),
-            Mode::Transition(curve) => {
-                Self::transition(value, curve).with_duration(config.duration())
-            }
+    pub fn new(value: T, mode: Mode) -> Self {
+        match mode {
+            Mode::Spring(motion) => Self::spring(value, motion),
+            Mode::Transition(easing) => Self::transition(value, easing),
         }
     }
 
@@ -44,9 +40,9 @@ where
     }
 
     /// Creates a new [`Animated`] value using a [`Transition`] animation.
-    pub fn transition(value: T, curve: Curve) -> Self {
+    pub fn transition(value: T, easing: Easing) -> Self {
         Self {
-            animation: AnimationType::Transition(Transition::new(value).with_curve(curve)),
+            animation: AnimationType::Transition(Transition::new(value).with_easing(easing)),
         }
     }
 
@@ -58,7 +54,7 @@ where
                 spring.set_motion(motion);
             }
             AnimationType::Transition(transition) => {
-                transition.set_duration(duration);
+                transition.set_easing(transition.easing().with_duration(duration));
             }
         }
 
@@ -125,9 +121,9 @@ where
     }
 
     /// Applies the given `config` to this animation, updating any duration/motion/curve settings.
-    /// This will change
-    pub(crate) fn apply(&mut self, config: AnimationConfig) {
-        match config.mode() {
+    /// Changing modes will reset the animation, interrupting any existing animation curve.
+    pub(crate) fn apply(&mut self, mode: Mode) {
+        match mode {
             Mode::Spring(motion) => {
                 if let AnimationType::Spring(spring) = &mut self.animation {
                     spring.set_motion(motion);
@@ -138,17 +134,14 @@ where
                         AnimationType::Spring(Spring::new(value).to(target).with_motion(motion));
                 }
             }
-            Mode::Transition(curve) => {
+            Mode::Transition(easing) => {
                 if let AnimationType::Transition(transition) = &mut self.animation {
-                    transition.set_curve(curve);
+                    transition.set_easing(easing);
                 } else {
                     let value = self.value().clone();
                     let target = self.target().clone();
                     self.animation = AnimationType::Transition(
-                        Transition::new(value)
-                            .to(target)
-                            .with_curve(curve)
-                            .with_duration(self.duration()),
+                        Transition::new(value).to(target).with_easing(easing),
                     );
                 }
             }
@@ -196,6 +189,6 @@ where
     T: Animate + Default,
 {
     fn default() -> Self {
-        Animated::new(T::default(), AnimationConfig::default())
+        Animated::new(T::default(), Mode::default())
     }
 }

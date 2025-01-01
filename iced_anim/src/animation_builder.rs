@@ -72,7 +72,7 @@
 //! Use the `Animation` widget if you need any of these properties.
 //!
 //! If these limitations apply to you, consider using the `Animation` widget instead.
-use crate::{animate::Animate, animated::AnimationConfig, Animated};
+use crate::{animate::Animate, animated::Mode, Animated};
 use iced::{
     advanced::{
         graphics::core::event,
@@ -97,8 +97,8 @@ where
     target: T,
     /// The function that builds the element using the animated value.
     builder: Box<dyn Fn(T) -> Element<'a, Message, Theme, Renderer> + 'a>,
-    /// The configuration for how to animate the value.
-    config: AnimationConfig,
+    /// The mode defining how to animate the value.
+    mode: Mode,
     /// Whether the layout will be affected by the animated value.
     animates_layout: bool,
     /// Whether animations are disabled, in which case the value will be updated
@@ -122,15 +122,15 @@ where
             target,
             builder: Box::new(builder),
             cached_element: element,
-            config: AnimationConfig::default(),
+            mode: Mode::default(),
             animates_layout: false,
             is_disabled: false,
         }
     }
 
     /// Defines the way the value will animate.
-    pub fn animation(mut self, config: impl Into<AnimationConfig>) -> Self {
-        self.config = config.into();
+    pub fn animation(mut self, mode: impl Into<Mode>) -> Self {
+        self.mode = mode.into();
         self
     }
 
@@ -168,7 +168,7 @@ where
 
 struct State<T> {
     animation: Animated<T>,
-    config: AnimationConfig,
+    mode: Mode,
 }
 
 impl<'a, T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
@@ -183,8 +183,8 @@ where
 
     fn state(&self) -> tree::State {
         tree::State::new(State {
-            animation: Animated::new(self.target.clone(), self.config),
-            config: self.config,
+            animation: Animated::new(self.target.clone(), self.mode),
+            mode: self.mode,
         })
     }
 
@@ -203,9 +203,9 @@ where
             }
         }
 
-        if state.config != self.config {
-            state.config = self.config;
-            state.animation.apply(self.config);
+        if state.mode != self.mode {
+            state.mode = self.mode;
+            state.animation.apply(self.mode);
         }
 
         tree.diff_children(std::slice::from_ref(&self.cached_element));

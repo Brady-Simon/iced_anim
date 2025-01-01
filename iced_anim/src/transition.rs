@@ -4,8 +4,9 @@ pub mod curve;
 mod easing;
 mod progress;
 
-use crate::{animated::DEFAULT_DURATION, Animate, Event};
+use crate::{Animate, Event};
 pub use curve::Curve;
+pub use easing::Easing;
 pub use progress::Progress;
 use std::time::{Duration, Instant};
 
@@ -18,10 +19,8 @@ pub struct Transition<T> {
     value: T,
     /// The target value of the transition - the end point.
     target: T,
-    /// The curve to use to determine how to update the current value over time.
-    curve: Curve,
-    /// How long the transition should take to complete.
-    duration: Duration,
+    /// The easing properties used to determine how to update a value over time.
+    easing: Easing,
     /// How far along the transition is.
     progress: Progress,
     /// The time at which the transition was last updated.
@@ -38,33 +37,21 @@ where
             initial: value.clone(),
             target: value.clone(),
             value,
-            curve: Curve::default(),
-            duration: DEFAULT_DURATION,
+            easing: Easing::default(),
             progress: Progress::default(),
             last_update: Instant::now(),
         }
     }
 
-    /// Sets the curve to use for the transition and returns the updated transition.
-    pub fn with_curve(mut self, curve: Curve) -> Self {
-        self.curve = curve;
+    /// Sets the easing to use for the transition and returns the updated transition.
+    pub fn with_easing(mut self, easing: Easing) -> Self {
+        self.easing = easing;
         self
     }
 
-    /// Sets the duration of the transition and returns the updated transition.
-    pub fn with_duration(mut self, duration: Duration) -> Self {
-        self.duration = duration;
-        self
-    }
-
-    /// Sets the duratoin of the transition.
-    pub fn set_duration(&mut self, duration: Duration) {
-        self.duration = duration;
-    }
-
-    /// Sets the curve of the transition.
-    pub fn set_curve(&mut self, curve: Curve) {
-        self.curve = curve;
+    /// Sets the easing of the transition.
+    pub fn set_easing(&mut self, easing: Easing) {
+        self.easing = easing;
     }
 
     /// Returns a reference to the current `value` of the transition.
@@ -83,15 +70,31 @@ where
         }
     }
 
+    /// Returns the transition's current [`Easing`] configuration.
+    pub fn easing(&self) -> Easing {
+        self.easing
+    }
+
     /// Returns the duration of the transition.
     pub fn duration(&self) -> Duration {
-        self.duration
+        self.easing.duration
     }
 
     /// Reverses the transition, swapping the initial and target values
     /// and adjusts the animation status to be in the opposite direction.
+    ///
+    /// If the transition is not reversible, this will use the initial value as the new target
+    /// and reset the progress to start from the beginning.
     pub fn reverse(&mut self) {
-        self.progress.reverse();
+        if self.easing.reversible {
+            self.progress.reverse();
+        } else {
+            // If the transition isn't reversible, change the target value to the initial value
+            // and reset the progress to start from the beginning.
+            self.target = self.initial.clone();
+            self.initial = self.value.clone();
+            self.progress = Progress::Forward(0.0);
+        }
     }
 
     /// Ends the transition, immediately setting the current value to the target value.
@@ -169,7 +172,7 @@ where
         self.last_update = now;
 
         self.progress
-            .update(delta.as_secs_f32() / self.duration.as_secs_f32());
+            .update(delta.as_secs_f32() / self.easing.duration.as_secs_f32());
         if self.progress.is_complete() {
             // We're at the target - assign the current value to the target value.
             // This ensures that the value is exactly the target value, even if the
@@ -180,7 +183,7 @@ where
             self.value.lerp(
                 &self.initial,
                 &self.target,
-                self.curve.value(self.progress.value()),
+                self.easing.curve.value(self.progress.value()),
             );
         }
     }
@@ -202,19 +205,44 @@ mod tests {
         let duration = Duration::from_millis(100);
         let transition = Transition::new(0.0)
             .to(1.0)
-            .with_curve(Curve::Ease)
-            .with_duration(duration);
+            .with_easing(Easing::EASE.with_duration(duration));
         assert_eq!(*transition.value(), 0.0);
         assert_eq!(*transition.target(), 1.0);
-        assert_eq!(transition.curve, Curve::Ease);
-        assert_eq!(transition.duration, duration);
+        assert_eq!(transition.easing, Easing::EASE.with_duration(duration));
+    }
+
+    /// Transitions that are not reversible should always use the `Progress::Forward` variant
+    /// and update the target value to be the new target value.
+    #[test]
+    fn non_reversible_transitions() {
+        let mut transition = Transition::new(0.0)
+            .to(1.0)
+            .with_easing(Easing::default().reversible(false));
+        let halfway = Instant::now() + DEFAULT_DURATION / 2;
+        let new_target = 2.0;
+
+        // Forward progress should maintain the `forward` direction.
+        transition.tick(halfway);
+        assert!(matches!(transition.progress, Progress::Forward(_)));
+
+        // Setting a new target should not reverse the transition.
+        transition.set_target(new_target);
+        assert!(matches!(transition.progress, Progress::Forward(_)));
+        assert_eq!(*transition.target(), new_target);
+
+        // The final result should have the new target value.
+        let done = Instant::now() + DEFAULT_DURATION;
+        transition.tick(done);
+        assert_eq!(*transition.value(), new_target);
     }
 
     /// Transitions should be reversible such that changing targets in the middle of an
     /// animation will reverse the animation if the target is the initial value.
     #[test]
     fn reversible_transitions() {
-        let mut transition = Transition::new(0.0).to(1.0);
+        let mut transition = Transition::new(0.0)
+            .to(1.0)
+            .with_easing(Easing::default().reversible(true));
         let halfway = Instant::now() + DEFAULT_DURATION / 2;
         let done = Instant::now() + DEFAULT_DURATION;
 

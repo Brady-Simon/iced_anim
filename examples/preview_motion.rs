@@ -4,8 +4,7 @@ use iced::{
     Border, Element, Length,
 };
 use iced_anim::{
-    animated::AnimationConfig, animation_builder::AnimationBuilder, spring::Motion,
-    transition::Curve,
+    animated::Mode, animation_builder::AnimationBuilder, spring::Motion, transition::Easing,
 };
 
 const CIRCLE_DIAMETER: f32 = 50.0;
@@ -26,12 +25,12 @@ impl std::fmt::Display for PreviewMotion {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct PreviewCurve {
+struct PreviewEasing {
     name: &'static str,
-    curve: Curve,
+    easing: Easing,
 }
 
-impl std::fmt::Display for PreviewCurve {
+impl std::fmt::Display for PreviewEasing {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }
@@ -52,30 +51,30 @@ const MOTIONS: [PreviewMotion; 3] = [
     },
 ];
 
-const CURVES: [PreviewCurve; 6] = [
-    PreviewCurve {
+const EASINGS: [PreviewEasing; 6] = [
+    PreviewEasing {
         name: "Linear",
-        curve: Curve::Linear,
+        easing: Easing::LINEAR,
     },
-    PreviewCurve {
+    PreviewEasing {
         name: "Ease",
-        curve: Curve::Ease,
+        easing: Easing::EASE,
     },
-    PreviewCurve {
+    PreviewEasing {
         name: "Ease In",
-        curve: Curve::EaseIn,
+        easing: Easing::EASE_IN,
     },
-    PreviewCurve {
+    PreviewEasing {
         name: "Ease Out",
-        curve: Curve::EaseOut,
+        easing: Easing::EASE_OUT,
     },
-    PreviewCurve {
+    PreviewEasing {
         name: "Ease In Out",
-        curve: Curve::EaseInOut,
+        easing: Easing::EASE_IN_OUT,
     },
-    PreviewCurve {
+    PreviewEasing {
         name: "Ease In Out Circular",
-        curve: Curve::EaseInOutCirc,
+        easing: Easing::EASE_IN_OUT_CIRC,
     },
 ];
 
@@ -84,14 +83,14 @@ enum Message {
     SelectAnimationType(bool),
     ToggleOffset,
     ChangeMotion(PreviewMotion),
-    ChangeCurve(PreviewCurve),
+    ChangeCurve(PreviewEasing),
 }
 
 struct State {
     is_spring: bool,
     offset: f32,
     preview_motion: PreviewMotion,
-    preview_curve: PreviewCurve,
+    preview_easing: PreviewEasing,
 }
 
 impl Default for State {
@@ -100,17 +99,18 @@ impl Default for State {
             is_spring: true,
             offset: -MAX_OFFSET,
             preview_motion: MOTIONS[0].clone(),
-            preview_curve: CURVES[0].clone(),
+            preview_easing: EASINGS[0].clone(),
         }
     }
 }
 
 impl State {
-    pub fn animation_config(&self) -> AnimationConfig {
+    /// The animation mode the preview should use.
+    pub fn animation_mode(&self) -> Mode {
         if self.is_spring {
-            AnimationConfig::spring(self.preview_motion.motion)
+            Mode::Spring(self.preview_motion.motion)
         } else {
-            AnimationConfig::transition(self.preview_curve.curve)
+            Mode::Transition(self.preview_easing.easing)
         }
     }
 }
@@ -128,7 +128,7 @@ impl State {
                 self.preview_motion = motion;
             }
             Message::ChangeCurve(curve) => {
-                self.preview_curve = curve;
+                self.preview_easing = curve;
             }
         }
     }
@@ -158,8 +158,8 @@ impl State {
             .into()
         } else {
             pick_list(
-                CURVES,
-                Some(self.preview_curve.clone()),
+                EASINGS,
+                Some(self.preview_easing.clone()),
                 Message::ChangeCurve,
             )
             .into()
@@ -186,7 +186,7 @@ impl State {
                 .center(Length::Fill)
                 .into()
             })
-            .animation(self.animation_config())
+            .animation(self.animation_mode())
             .animates_layout(true),
         )
         .center(Length::Fill);

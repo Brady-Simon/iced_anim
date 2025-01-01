@@ -10,8 +10,13 @@ pub struct Easing {
     pub curve: Curve,
     /// How long the transition should take to complete.
     pub duration: Duration,
-    /// Whether the transition will move in reverse if a new target value is the
-    /// same as the initial value.
+    /// Whether the transition will move in reverse if a new target value
+    /// is the same as the initial value.
+    ///
+    /// Reversible animations will transition the current value along the curve backwards if the
+    /// new target value is the same as the initial value, e.g. `0.0 -> 1.0 -> 0.0`. Otherwise,
+    /// changing the target value will always be treated as moving forward along the curve and
+    /// restart the transition from the beginning.
     pub reversible: bool,
 }
 
@@ -26,6 +31,48 @@ impl Default for Easing {
 }
 
 impl Easing {
+    /// A default easing that uses [`Curve::Linear`] and the default duration.
+    pub const LINEAR: Self = Self {
+        curve: Curve::Linear,
+        duration: DEFAULT_DURATION,
+        reversible: false,
+    };
+
+    /// A default easing that uses [`Curve::Ease`] and the default duration.
+    pub const EASE: Self = Self {
+        curve: Curve::Ease,
+        duration: DEFAULT_DURATION,
+        reversible: false,
+    };
+
+    /// A default easing that uses [`Curve::EaseIn`] and the default duration.
+    pub const EASE_IN: Self = Self {
+        curve: Curve::EaseIn,
+        duration: DEFAULT_DURATION,
+        reversible: false,
+    };
+
+    /// A default easing that uses [`Curve::EaseOut`] and the default duration.
+    pub const EASE_OUT: Self = Self {
+        curve: Curve::EaseIn,
+        duration: DEFAULT_DURATION,
+        reversible: false,
+    };
+
+    /// A default easing that uses [`Curve::EaseInOut`] and the default duration.
+    pub const EASE_IN_OUT: Self = Self {
+        curve: Curve::EaseInOut,
+        duration: DEFAULT_DURATION,
+        reversible: false,
+    };
+
+    /// A default easing that uses [`Curve::EaseInOutCirc`] and the default duration.
+    pub const EASE_IN_OUT_CIRC: Self = Self {
+        curve: Curve::EaseInOutCirc,
+        duration: DEFAULT_DURATION,
+        reversible: false,
+    };
+
     /// Creates a new [`Easing`] with the given `curve`.
     pub fn new(curve: Curve) -> Self {
         Self {
@@ -48,6 +95,11 @@ impl Easing {
     }
 
     /// Sets whether the easing is reversible and returns the updated easing.
+    ///
+    /// Reversible animations will transition the current value along the curve backwards if the
+    /// new target value is the same as the initial value, e.g. `0.0 -> 1.0 -> 0.0`. Otherwise,
+    /// changing the target value will always be treated as moving forward along the curve and
+    /// restart the transition from the beginning.
     pub fn reversible(mut self, reversible: bool) -> Self {
         self.reversible = reversible;
         self
@@ -68,7 +120,7 @@ mod tests {
     }
 
     #[test]
-    fn builders() {
+    fn initialization() {
         let easing = Easing::new(Curve::EaseInOut)
             .with_duration(Duration::from_millis(300))
             .reversible(true);

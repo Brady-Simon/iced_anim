@@ -6,7 +6,7 @@ use iced::{
     widget::{button, column, container, row, text},
     Border, Color, Element, Length,
 };
-use iced_anim::{transition::Curve, Animated, Animation, Event};
+use iced_anim::{transition::Easing, Animated, Animation, Event};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -26,9 +26,8 @@ const MAGENTA: Color = Color::from_rgb(1.0, 0.0, 1.0);
 impl Default for State {
     fn default() -> Self {
         Self {
-            size: Animated::transition(50.0, Curve::Ease),
-            // size: Animated::spring(50.0, Motion::SMOOTH),
-            color: Animated::transition(CYAN, Curve::Ease),
+            size: Animated::transition(50.0, Easing::EASE),
+            color: Animated::transition(CYAN, Easing::EASE),
         }
     }
 }

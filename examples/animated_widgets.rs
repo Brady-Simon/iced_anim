@@ -7,9 +7,8 @@ use iced::{
     Theme,
 };
 use iced_anim::{
-    animated::AnimationConfig,
     spring::Motion,
-    transition::Curve,
+    transition::Easing,
     widget::button::{button, danger, primary, Status},
 };
 use std::{f32::consts::PI, sync::LazyLock, time::Duration};
@@ -42,30 +41,30 @@ impl State {
             column![
                 button(text("+"))
                     .on_press_maybe(is_enabled.then_some(Message::Adjust(1)))
-                    .animation(AnimationConfig::transition(Curve::Ease))
+                    .animation(Easing::EASE)
                     .style(primary),
                 row![
                     button(text("-10"))
                         .on_press_maybe(is_enabled.then_some(Message::Adjust(-10)))
-                        .animation(AnimationConfig::spring(Motion::default()))
+                        .animation(Motion::default())
                         .style(danger_gradient),
                     text(self.counter.to_string()).size(24).width(60.0).center(),
                     button(text("+10"))
                         .on_press_maybe(is_enabled.then_some(Message::Adjust(10)))
-                        .animation(AnimationConfig::spring(Motion::default()))
+                        .animation(Motion::default())
                         .style(success_gradient),
                 ]
                 .spacing(8),
                 button(text("-"))
                     .on_press_maybe(is_enabled.then_some(Message::Adjust(-1)))
-                    .animation(AnimationConfig::transition(Curve::Ease))
+                    .animation(Easing::EASE)
                     .style(danger),
                 button(text("Reset").size(20))
                     .on_press_maybe(is_enabled.then_some(Message::Adjust(-self.counter)))
-                    .animation(AnimationConfig::spring(Motion {
+                    .animation(Motion {
                         response: Duration::from_millis(1000),
                         damping: Motion::SMOOTH.damping(),
-                    }))
+                    })
                     .style(rainbow_style),
                 checkbox("Disable Buttons", self.is_disabled).on_toggle(Message::DisableButtons)
             ]
