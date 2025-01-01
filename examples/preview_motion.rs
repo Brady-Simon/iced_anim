@@ -1,8 +1,12 @@
 use iced::{
-    widget::{button, column, container, pick_list, row, stack, text, Column, Row, Space},
+    widget::{button, column, container, pick_list, radio, row, stack, text, Column, Row, Space},
+    Alignment::Center,
     Border, Element, Length,
 };
-use iced_anim::{animation_builder::AnimationBuilder, spring::Motion};
+use iced_anim::{
+    animated::AnimationConfig, animation_builder::AnimationBuilder, spring::Motion,
+    transition::Curve,
+};
 
 const CIRCLE_DIAMETER: f32 = 50.0;
 
@@ -21,7 +25,19 @@ impl std::fmt::Display for PreviewMotion {
     }
 }
 
-const MOTIONS: [PreviewMotion; 4] = [
+#[derive(Debug, Clone, PartialEq)]
+struct PreviewCurve {
+    name: &'static str,
+    curve: Curve,
+}
+
+impl std::fmt::Display for PreviewCurve {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+const MOTIONS: [PreviewMotion; 3] = [
     PreviewMotion {
         name: "Smooth",
         motion: Motion::SMOOTH,
@@ -34,28 +50,67 @@ const MOTIONS: [PreviewMotion; 4] = [
         name: "Bouncy",
         motion: Motion::BOUNCY,
     },
-    PreviewMotion {
-        name: "Instant",
-        motion: Motion::INSTANT,
+];
+
+const CURVES: [PreviewCurve; 6] = [
+    PreviewCurve {
+        name: "Linear",
+        curve: Curve::Linear,
+    },
+    PreviewCurve {
+        name: "Ease",
+        curve: Curve::Ease,
+    },
+    PreviewCurve {
+        name: "Ease In",
+        curve: Curve::EaseIn,
+    },
+    PreviewCurve {
+        name: "Ease Out",
+        curve: Curve::EaseOut,
+    },
+    PreviewCurve {
+        name: "Ease In Out",
+        curve: Curve::EaseInOut,
+    },
+    PreviewCurve {
+        name: "Ease In Out Circular",
+        curve: Curve::EaseInOutCirc,
     },
 ];
 
 #[derive(Debug, Clone)]
 enum Message {
+    SelectAnimationType(bool),
     ToggleOffset,
     ChangeMotion(PreviewMotion),
+    ChangeCurve(PreviewCurve),
 }
 
 struct State {
+    is_spring: bool,
     offset: f32,
     preview_motion: PreviewMotion,
+    preview_curve: PreviewCurve,
 }
 
 impl Default for State {
     fn default() -> Self {
         Self {
+            is_spring: true,
             offset: -MAX_OFFSET,
             preview_motion: MOTIONS[0].clone(),
+            preview_curve: CURVES[0].clone(),
+        }
+    }
+}
+
+impl State {
+    pub fn animation_config(&self) -> AnimationConfig {
+        if self.is_spring {
+            AnimationConfig::spring(self.preview_motion.motion)
+        } else {
+            AnimationConfig::transition(self.preview_curve.curve)
         }
     }
 }
@@ -65,23 +120,54 @@ impl State {
         match message {
             Message::ToggleOffset => {
                 self.offset *= -1.0;
-                // self.offset = if self.offset == 0.0 { MAX_OFFSET } else { 0.0 };
+            }
+            Message::SelectAnimationType(is_spring) => {
+                self.is_spring = is_spring;
             }
             Message::ChangeMotion(motion) => {
                 self.preview_motion = motion;
+            }
+            Message::ChangeCurve(curve) => {
+                self.preview_curve = curve;
             }
         }
     }
 
     fn view(&self) -> Element<Message> {
-        let motion_picker = pick_list(
-            MOTIONS,
-            Some(self.preview_motion.clone()),
-            Message::ChangeMotion,
-        );
+        let radio_buttons = column![
+            radio(
+                "Spring",
+                true,
+                Some(self.is_spring),
+                Message::SelectAnimationType,
+            ),
+            radio(
+                "Transition",
+                false,
+                Some(self.is_spring),
+                Message::SelectAnimationType,
+            ),
+        ];
+
+        let animation_picker: Element<Message> = if self.is_spring {
+            pick_list(
+                MOTIONS,
+                Some(self.preview_motion.clone()),
+                Message::ChangeMotion,
+            )
+            .into()
+        } else {
+            pick_list(
+                CURVES,
+                Some(self.preview_curve.clone()),
+                Message::ChangeCurve,
+            )
+            .into()
+        };
 
         let toggle_button = button(text("Toggle")).on_press(Message::ToggleOffset);
-        let buttons = row![motion_picker, toggle_button].spacing(8);
+        let buttons = row![animation_picker, toggle_button].spacing(8);
+        let header = row![radio_buttons, buttons].spacing(16).align_y(Center);
 
         let animated_circles = container(
             AnimationBuilder::new(self.offset, |offset| {
@@ -100,12 +186,12 @@ impl State {
                 .center(Length::Fill)
                 .into()
             })
-            .animation(self.preview_motion.motion)
+            .animation(self.animation_config())
             .animates_layout(true),
         )
         .center(Length::Fill);
 
-        container(column![buttons, animated_circles].spacing(8).padding(8))
+        container(column![header, animated_circles].spacing(8).padding(8))
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
