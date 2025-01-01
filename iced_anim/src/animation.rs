@@ -33,7 +33,7 @@
 //!         Row::new()
 //!             .push(
 //!                 button(text("Change target"))
-//!                     .on_press(Message::UpdateSize((self.size.value() + 50.0).into()))
+//!                     .on_press(Message::UpdateSize((self.size.target() + 50.0).into()))
 //!             )
 //!             .push(
 //!                 Animation::new(&self.size, text(self.size.value().to_string()))

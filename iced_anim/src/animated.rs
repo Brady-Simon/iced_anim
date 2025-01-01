@@ -25,8 +25,8 @@ where
     T: Animate,
 {
     /// Creates a new [`Animated`] value based on the given [`AnimationConfig`].
-    pub fn new(value: T, mode: Mode) -> Self {
-        match mode {
+    pub fn new(value: T, mode: impl Into<Mode>) -> Self {
+        match mode.into() {
             Mode::Spring(motion) => Self::spring(value, motion),
             Mode::Transition(easing) => Self::transition(value, easing),
         }
