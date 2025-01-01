@@ -180,10 +180,22 @@ your state and the element won't contain any nested animated values, then use
 limitations of widget-driven animations. Also, use `Animation` anytime you want
 your state to contain the animated value.
 
-### Animated widgets
+### Should I use a `Spring` or a `Transition`?
+
+It's largely personal preference, but springs are typically better at 
+interactive animations because they're momentum-based and keep their existing
+speed even when the target changes. This makes animations whose target value is
+always changing to appear much more fluid. See the `animated_bubble` example
+for a constantly-changing animation target.
+
+If your animation isn't going to be constantly changing or it's something minor
+like a color, then you can use a transition with an easing curve.
+
+## Animated widgets
 
 A subset of the standard `iced` widgets are exported under a `widgets` feature
-flag. You can use these as drop-in replacements for the existing widgets:
+flag. You can use these as drop-in replacements for the existing widgets and
+control the animation mode via the `.animation()` builder function on them:
 
 ```rust
 use iced::widget::text;
