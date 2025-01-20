@@ -16,7 +16,8 @@
 //!
 //! ```rust
 //! # use iced::{Element, widget::{container, text}};
-//! # use iced_anim::AnimationBuilder;
+//! # use iced_anim::{AnimationBuilder, transition::Easing};
+//! # use std::time::Duration;
 //! # struct State {
 //! #     size: f32,
 //! # }
@@ -30,6 +31,7 @@
 //!         .into()
 //! })
 //! .animates_layout(true)
+//! .animation(Easing::LINEAR.with_duration(Duration::from_millis(300)))
 //! #   .into()
 //! #     }
 //! # }

@@ -147,6 +147,7 @@ AnimationBuilder::new(self.size, |size| {
         .into()
 })
 .animates_layout(true)
+.animation(Easing::LINEAR.with_duration(Duration::from_millis(300)))
 ```
 
 > NOTE: `.animates_layout(true)` is what allows re-rendering certain properties
@@ -158,6 +159,9 @@ provides the current animated value and will be called to generate the next
 view as appropriate. This means you don't need to store an `Animated` value in
 your app state or have a message dedicated to updating it. To see more for this
 particular example, refer to the `animated_size` example.
+
+You can customize the animation curve and duration with the `.animation` method
+and pass in either a `Spring` or an `Easing` instance.
 
 #### Limitations
 

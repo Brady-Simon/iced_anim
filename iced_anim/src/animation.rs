@@ -9,12 +9,20 @@
 //!
 //! # Example
 //! ```rust
+//! use std::time::Duration;
 //! use iced::widget::{button, text, Row};
-//! use iced_anim::{Animation, Animated, Event};
+//! use iced_anim::{Animation, Animated, Event, transition::Easing};
 //!
-//! #[derive(Default)]
 //! struct State {
 //!     size: Animated<f32>,
+//! }
+//!
+//! impl Default for State {
+//!     fn default() -> Self {
+//!        Self {
+//!           size: Animated::new(0.0, Easing::LINEAR.with_duration(Duration::from_millis(300)))
+//!       }
+//!     }
 //! }
 //!
 //! #[derive(Clone)]
