@@ -77,7 +77,6 @@
 use crate::{animate::Animate, animated::Mode, Animated};
 use iced::{
     advanced::{
-        graphics::core::event,
         layout,
         widget::{tree, Tree},
         Widget,
@@ -296,20 +295,20 @@ where
         )
     }
 
-    fn on_event(
+    fn update(
         &mut self,
         tree: &mut Tree,
-        event: iced::Event,
+        event: &iced::Event,
         layout: iced::advanced::Layout<'_>,
         cursor: iced::advanced::mouse::Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn iced::advanced::Clipboard,
         shell: &mut iced::advanced::Shell<'_, Message>,
         viewport: &iced::Rectangle,
-    ) -> event::Status {
-        let status = self.cached_element.as_widget_mut().on_event(
+    ) {
+        self.cached_element.as_widget_mut().update(
             &mut tree.children[0],
-            event.clone(),
+            event,
             layout,
             cursor,
             renderer,
@@ -319,25 +318,23 @@ where
         );
 
         let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event else {
-            return status;
+            return;
         };
 
         let state = tree.state.downcast_mut::<State<T>>();
 
         // Request a redraw if the spring has remaining energy
         if state.animation.is_animating() {
-            shell.request_redraw(iced::window::RedrawRequest::NextFrame);
+            shell.request_redraw();
             // Only invalidate the layout if the user indicates to do so
             if self.animates_layout {
                 shell.invalidate_layout();
             }
 
             // Update the animation and request a redraw
-            state.animation.tick(now);
+            state.animation.tick(*now);
             self.cached_element = (self.builder)(state.animation.value().clone());
         }
-
-        status
     }
 }
 

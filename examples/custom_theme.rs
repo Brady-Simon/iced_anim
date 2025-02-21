@@ -1,6 +1,6 @@
 //! An example animating a custom theme palette.
 use iced::{
-    daemon::DefaultStyle,
+    theme::Base,
     widget::{button, text},
     Border, Color, Element,
 };
@@ -54,10 +54,10 @@ impl Animate for Theme {
 }
 
 // A default daemon style for the custom theme.
-impl DefaultStyle for Theme {
-    fn default_style(&self) -> iced::daemon::Appearance {
+impl Base for Theme {
+    fn base(&self) -> iced::theme::Style {
         let palette = self.palette();
-        iced::daemon::Appearance {
+        iced::theme::Style {
             text_color: palette.text,
             background_color: palette.background,
         }

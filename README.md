@@ -1,4 +1,4 @@
-# Iced Animations
+# Iced Animations - using iced 0.14-dev
 
 This package is designed to make it easy to animate between values using 
 [the Iced framework](https://github.com/iced-rs/iced).
