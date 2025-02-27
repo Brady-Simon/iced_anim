@@ -4,5 +4,5 @@ members = ["iced_anim", "iced_anim_derive", "examples"]
 
 [workspace.dependencies.iced]
 git = "https://github.com/pml68/iced"
-rev = "d49a70eaea0803b9a4843b37e870f44b652ed6df"
+rev = "3a491669e7fecf21c261de63dcb1e8069063648f"
 features = ["advanced", "svg"]
