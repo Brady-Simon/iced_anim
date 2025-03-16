@@ -61,6 +61,26 @@ where
         self
     }
 
+    /// Sets the duration of the [`Animated`] value to 100ms.
+    pub fn very_quick(self) -> Self {
+        self.with_duration(Duration::from_millis(100))
+    }
+
+    /// Sets the duration of the [`Animated`] value to 200ms.
+    pub fn quick(self) -> Self {
+        self.with_duration(Duration::from_millis(200))
+    }
+
+    /// Sets the duration of the [`Animated`] value to 400ms.
+    pub fn slow(self) -> Self {
+        self.with_duration(Duration::from_millis(400))
+    }
+
+    /// Sets the duration of the [`Animated`] value to 500ms.
+    pub fn very_slow(self) -> Self {
+        self.with_duration(Duration::from_millis(500))
+    }
+
     /// Updates the animation based on some [`Event`] that occurred.
     pub fn update(&mut self, event: Event<T>) {
         match &mut self.animation {
