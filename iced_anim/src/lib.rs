@@ -69,8 +69,8 @@ pub use animated_state::AnimatedState;
 pub use animation::Animation;
 pub use animation_builder::*;
 pub use event::Event;
-pub use spring::Spring;
-pub use transition::Transition;
+pub use spring::{Motion, Spring};
+pub use transition::{Easing, Transition};
 
 #[cfg(feature = "derive")]
 pub use iced_anim_derive::Animate;
