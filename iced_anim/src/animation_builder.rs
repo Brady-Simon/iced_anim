@@ -173,8 +173,8 @@ struct State<T> {
     mode: Mode,
 }
 
-impl<'a, T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
-    for AnimationBuilder<'a, T, Message, Theme, Renderer>
+impl<T, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
+    for AnimationBuilder<'_, T, Message, Theme, Renderer>
 where
     T: 'static + Animate,
     Renderer: iced::advanced::Renderer,
