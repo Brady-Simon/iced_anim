@@ -87,6 +87,26 @@ impl Easing {
         self
     }
 
+    /// Sets the duration of the [`Easing`] value to 100ms.
+    pub fn very_quick(self) -> Self {
+        self.with_duration(Duration::from_millis(100))
+    }
+
+    /// Sets the duration of the [`Easing`] to 200ms.
+    pub fn quick(self) -> Self {
+        self.with_duration(Duration::from_millis(200))
+    }
+
+    /// Sets the duration of the [`Easing`] to 400ms.
+    pub fn slow(self) -> Self {
+        self.with_duration(Duration::from_millis(400))
+    }
+
+    /// Sets the duration of the [`Easing`] to 500ms.
+    pub fn very_slow(self) -> Self {
+        self.with_duration(Duration::from_millis(500))
+    }
+
     /// Sets whether the easing is reversible and returns the updated easing.
     ///
     /// Reversible animations will transition the current value along the curve backwards if the

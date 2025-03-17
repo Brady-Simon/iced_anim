@@ -42,16 +42,36 @@ impl Motion {
         response: Duration::ZERO,
     };
 
-    /// Create a custom spring motion with the given response `duration`.
+    /// Sets the duration of the [`Motion`] to the given value.
     pub fn with_duration(mut self, duration: Duration) -> Self {
         self.response = duration;
         self
     }
 
-    /// Create a custom spring motion with the given `damping` fraction.
+    /// Sets the damping of the [`Motion`] to the given value.
     pub fn with_damping(mut self, damping: f32) -> Self {
         self.damping = damping;
         self
+    }
+
+    /// Sets the duration of the [`Motion`] value to 100ms.
+    pub fn very_quick(self) -> Self {
+        self.with_duration(Duration::from_millis(100))
+    }
+
+    /// Sets the duration of the [`Motion`] to 200ms.
+    pub fn quick(self) -> Self {
+        self.with_duration(Duration::from_millis(200))
+    }
+
+    /// Sets the duration of the [`Motion`] to 400ms.
+    pub fn slow(self) -> Self {
+        self.with_duration(Duration::from_millis(400))
+    }
+
+    /// Sets the duration of the [`Motion`] to 500ms.
+    pub fn very_slow(self) -> Self {
+        self.with_duration(Duration::from_millis(500))
     }
 
     /// The estimated duration of how long the spring animation.
