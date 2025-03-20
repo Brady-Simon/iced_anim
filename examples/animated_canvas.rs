@@ -11,7 +11,6 @@ use iced::{
     Padding, Point, Rectangle, Renderer, Size, Theme,
 };
 use iced_anim::{spring::Motion, Animated, Animation, Event};
-use std::time::Duration;
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -45,10 +44,7 @@ impl Default for AppState {
         ];
         Self {
             hovered_index: 0,
-            animated_selection: Animated::spring(
-                shapes[0],
-                Motion::default().with_duration(Duration::from_millis(300)),
-            ),
+            animated_selection: Animated::new(shapes[0], Motion::default().quick()),
             shapes,
         }
     }
