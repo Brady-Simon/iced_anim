@@ -2,5 +2,7 @@
 resolver = "2"
 members = ["iced_anim", "iced_anim_derive", "examples"]
 
-[workspace.dependencies]
-iced = { version = "0.13", features = ["advanced", "svg"] }
+[workspace.dependencies.iced]
+git = "https://github.com/pml68/iced"
+rev = "3a491669e7fecf21c261de63dcb1e8069063648f"
+features = ["advanced", "svg"]
