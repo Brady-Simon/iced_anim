@@ -34,8 +34,8 @@ impl Default for State {
 fn get_bubble_color(position: Point, size: Size) -> Color {
     let width = size.width.max(1.0);
     let height = size.height.max(1.0);
-    let x_ratio = position.x / width;
-    let y_ratio = position.y / height;
+    let x_ratio = (position.x / width).clamp(0.0, 1.0);
+    let y_ratio = (position.y / height).clamp(0.0, 1.0);
 
     Color::from_rgb(x_ratio, y_ratio, 1.0 - x_ratio)
 }
