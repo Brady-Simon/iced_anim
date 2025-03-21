@@ -292,7 +292,7 @@ fn circle<'a>(offset: Option<f32>, is_horizontal: bool) -> Element<'a, Message> 
 
 /// Gets a unique color based on the current offset.
 fn circle_color(offset: f32, is_horizontal: bool) -> iced::Color {
-    let ratio = (offset + MAX_OFFSET) / MAX_OFFSET / 2.0;
+    let ratio = ((offset + MAX_OFFSET) / MAX_OFFSET / 2.0).clamp(0.0, 1.0);
 
     if is_horizontal {
         iced::Color::from_rgb(1.0 - ratio, 0.75, ratio)
